@@ -2,27 +2,30 @@ import argparse
 import re
 
 print('Canary token v.0\n')
+# класс для обработки аргументов командной строки
+class Parse:
+    def parser_args(self):
+        parser = argparse.ArgumentParser() #объект-обработчик аргументов ArgumentParser
+        parser.add_argument('mail_list', type=argparse.FileType('r'), help='Set the file with the email addresses') #позиционный арг., содержит путь к файлу с адресами
+        return parser.parse_args() #возвращает объект с доступом к значениям введенных пользователем аргументов
 
-parser = argparse.ArgumentParser()
-parser.add_argument('load_file', type=argparse.FileType('r'))
-args = parser.parse_args()
-
-class Menu:
-    def handle_file(self):
-        regex = re.compile(r'[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+@[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+[.]+[a-z]{2,}')
+class Validate:
+    def __init__(self, mail_list): #инициализатор для файла со списком
+        self.mail_list = mail_list
+    def handle_file(self): #обработчик почт
         #файл, переданный как аргумент
-        with args.load_file as f:
+        with self.mail_list as f:
             emails = [email.strip() for email in f]
+        regex = re.compile(r'[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+@[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+[.]+[a-z]{2,}')
         valid_emails = []
         for email in emails:
-            #print(f"Check: {email}") #отладка
             if re.fullmatch(regex, email):
-                #print(f"Valid: {email}") # отладка
                 valid_emails.append(email)
             else:
                 print(f"Invalid: {email}") #отладка
         return valid_emails
 
-menu = Menu()
-valid_emails = menu.handle_file()
+args = Parse().parser_args()
+valid = Validate(args.mail_list)
+valid_emails = valid.handle_file()
 print(valid_emails)
