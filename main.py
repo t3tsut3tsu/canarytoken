@@ -5,7 +5,8 @@ print('Canary token v.0\n')
 # класс для обработки аргументов командной строки
 class Parse:
     def parser_args(self):
-        parser = argparse.ArgumentParser() #объект-обработчик аргументов ArgumentParser
+        parser = argparse.ArgumentParser(description="Takes the templates and sends them to the \
+        addresses. Then we'll start listening and waiting for the result until...", epilog="...trust is broken due to honeytoken.") #объект-обработчик аргументов ArgumentParser
         parser.add_argument('mail_list', type=argparse.FileType('r'), help='Set the file with the email addresses') #позиционный арг., содержит путь к файлу с адресами
         return parser.parse_args() #возвращает объект с доступом к значениям введенных пользователем аргументов
 
