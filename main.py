@@ -4,13 +4,14 @@ import re
 # класс для обработки аргументов командной строки
 class Parse:
     def parser_args(self):
-        parser = argparse.ArgumentParser(description="Takes the templates and sends them to the \
-        addresses. Then we'll start listening and waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
+        parser = argparse.ArgumentParser(description="Sends template to email addresses and "
+                                                     "then we'll start listening and "
+                                                     "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
         parser.add_argument('mail_list', type=argparse.FileType('r'), help='set file with email addresses')# позиционный арг., содержит путь к файлу с адресами
         parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx'], default='docx', help="set template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
-        parser.add_argument('-p', '--ports', type=int, default=25, nargs='+' , help="set SMTP-port/'s for sending") # опциональный арг., выбор порта/ов для отправки письма по SMTP | пока нет обработки
-        parser.add_argument('--from', type=str, default='test@example', help='set sender email address') # опциональный арг., выбор почтового адреса отправителя | пока нет обработки
-        parser.add_argument('-s', '--server', type=str, default='smtp.example', help='set sender server address') # опциональный арг., выбор адреса почтового сервера отправителя | пока нет обработки
+        parser.add_argument('-p', '--port', type=int, default=25,help="set SMTP-port for sending") # опциональный арг., выбор порта для отправки письма по SMTP | пока нет обработки
+        parser.add_argument('--sender', type=str, default='test@example', help='set sender email address') # опциональный арг., выбор почтового адреса отправителя | пока нет обработки
+        parser.add_argument('--server', type=str, default='smtp.example', help='set sender server address') # опциональный арг., выбор адреса почтового сервера отправителя | пока нет обработки
         return parser.parse_args() # возвращает объект с доступом к значениям аргументов
 
 class Validate:
