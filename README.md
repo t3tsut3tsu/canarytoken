@@ -1,8 +1,14 @@
 ## How to use
 
-1. '''git clone https://github.com/t3tsut3tsu/canarytoken'''
+1. Clone
+  
+   ```git clone https://github.com/t3tsut3tsu/canarytoken```
 
-2. '''cd canarytoken/'''
+4. Move
+   
+   ```cd canarytoken/```
 
-3. ![image](https://github.com/user-attachments/assets/71a0fb5f-ec56-4023-bb2a-ec940ec6554e)
+6. Do something
+  
+   ![image](https://github.com/user-attachments/assets/71a0fb5f-ec56-4023-bb2a-ec940ec6554e)
 
