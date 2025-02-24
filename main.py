@@ -1,8 +1,14 @@
 import argparse
+import configparser
 import re
 
-# класс для обработки аргументов командной строки
-class Parse:
+class ConfigAction: # класс для обработки конфиг файла, который пока что ничего не обрабатывает
+    def values_print(self):
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        for key in config['smtp']:
+            print(f"{key} = {config['smtp'][key]}")
+class Parse: # класс для обработки аргументов командной строки
     def parser_args(self):
         parser = argparse.ArgumentParser(description="Sends template to email addresses and "
                                                      "then we'll start listening and "
@@ -41,9 +47,11 @@ class Validate:
 
 args = Parse().parser_args()
 valid = Validate(mail_list=args.mail_list, extension=args.extension) # экземпляр класса Validate
+conf = ConfigAction()
 
 valid_mails = valid.handle_file()
 file_format = valid.extension_identify()
 
 print(valid_mails)
 print(file_format)
+print(conf)
