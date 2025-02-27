@@ -6,8 +6,8 @@ class ConfigAction: # класс для обработки конфиг файл
     def values_print(self):
         config = configparser.ConfigParser()
         config.read('config.ini')
-        for key in config['smtp']:
-            print(f"{key} = {config['smtp'][key]}")
+        return config.get("smtp", "smtp_server")
+
 class Parse: # класс для обработки аргументов командной строки
     def parser_args(self):
         parser = argparse.ArgumentParser(description="Sends template to email addresses and "
@@ -43,6 +43,10 @@ class Validate:
     def extension_identify(self):
         if self.extension == 'docx':
             return "\ndocx extension selected"
+        elif self.extension == 'pdf':
+            return "\npdf extension selected"
+        elif self.extension == 'xlsx':
+            return "\nxlsx extension selected"
 
 
 args = Parse().parser_args()
@@ -51,7 +55,8 @@ conf = ConfigAction()
 
 valid_mails = valid.handle_file()
 file_format = valid.extension_identify()
+conf_file = conf.values_print()
 
 print(valid_mails)
 print(file_format)
-print(conf)
+print(conf_file)
