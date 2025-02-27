@@ -2,11 +2,13 @@ import argparse
 import configparser
 import re
 
-class ConfigAction: # класс для обработки конфиг файла, который пока что ничего не обрабатывает
-    def values_print(self):
-        config = configparser.ConfigParser()
-        config.read('config.ini')
-        return config.get("smtp", "smtp_server")
+class ConfigAction: # класс для обработки конфиг файла
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    def smtp_configure(self):
+        smtp_server = self.config.get("smtp", "smtp_server")
+        smtp_port = self.config.get("smtp", "smtp_port")
+        return smtp_server, smtp_port
 
 class Parse: # класс для обработки аргументов командной строки
     def parser_args(self):
