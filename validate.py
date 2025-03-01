@@ -1,5 +1,6 @@
 import argparse
 import configparser
+import os
 import re
 
 class ConfigAction: # класс для обработки конфиг файла
@@ -8,7 +9,11 @@ class ConfigAction: # класс для обработки конфиг файл
     def smtp_configure(self):
         smtp_server = self.config.get("smtp", "smtp_server")
         smtp_port = self.config.get("smtp", "smtp_port")
-        return smtp_server, smtp_port
+        smtp_subject = self.config.get("smtp", "subject")
+        smtp_from_addr = self.config.get("smtp", "from_addr")
+        smtp_body = self.config.get("smtp", "body")
+        return smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body # ИСПРАВИТЬ: либо объявить отдельные методы для каждого параметра, \
+                                                                                # либо return {словарь} | пока не мешает
 
 class Parse: # класс для обработки аргументов командной строки
     def parser_args(self):
@@ -23,9 +28,9 @@ class Parse: # класс для обработки аргументов ком�
         return parser.parse_args() # возвращает объект с доступом к значениям аргументов
 
 class Validate:
-    def __init__(self, **kwargs): # инициализатор для аргументов
-        self.mail_list = kwargs.get('mail_list')
-        self.extension = kwargs.get('extension')
+    def __init__(self,  mail_list=None, extension=None): # инициализатор для аргументов | здесь был **kwargs
+        self.mail_list = mail_list
+        self.extension = extension
     def handle_file(self): # обработчик почт
         try:
             with self.mail_list as f: # файл, переданный как аргумент
@@ -44,20 +49,20 @@ class Validate:
             print("EoF Err")
     def extension_identify(self):
         if self.extension == 'docx':
-            return "\ndocx extension selected"
+            return os.path.join('templates','template.docx')#, "\n docx extension selected"
         elif self.extension == 'pdf':
-            return "\npdf extension selected"
+            return self.extension#, "\n pdf extension selected"
         elif self.extension == 'xlsx':
-            return "\nxlsx extension selected"
+            return self.extension#, "\n xlsx extension selected"
 
 
-args = Parse().parser_args()
+args = Parse().parser_args() # экземпляр класса Parse
 valid = Validate(mail_list=args.mail_list, extension=args.extension) # экземпляр класса Validate
-conf = ConfigAction()
+conf = ConfigAction() # экземпляр класса ConfigAction
 
 valid_mails = valid.handle_file()
 file_format = valid.extension_identify()
-conf_file = conf.values_print()
+conf_file = conf.smtp_configure()
 
 print(valid_mails)
 print(file_format)
