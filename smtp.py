@@ -16,27 +16,32 @@ class SmtpUnite: # Вообще для того, чтобы сформирова
         self.validator = ConfigAction()
         self.smtp_server, self.smtp_port, self.smtp_subject, self.smtp_from_addr, self.smtp_body = self.validator.smtp_configure()
 
-    def letter_forming(self):
-        from_addr = self.smtp_from_addr
-        subject = self.smtp_subject
+    def file_adding(self, msg): # метод формирует вложение в письмо
+        template = self.extension_identify
+        part = MIMEBase('application', "octet-stream")  # объект для загрузки файла
+        part.set_payload(open(template, "rb").read())
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{os.path.basename(template)}"')
+        msg.attach(part)
+
+    def letter_forming(self): # формирование самого письма + добавление вложений + создание smtp
+        from_addr = self.smtp_from_addr # все из конфига
+        subject = self.smtp_subject     # но тогда надо убирать некоторые аргументы
         receivers = self.handle_file
         body = self.smtp_body
 
-        msg = MIMEMultipart()
-        msg['From'] = from_addr
-        msg['To'] = receivers
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
+        smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port) # объект smtp
+        smtp_obj.set_debuglevel(1) # отладочные сообщения
 
-        template = self.extension_identify
-        part = MIMEBase('application', "octet-stream") # объект для загрузки файла
-        part.set_payload(open(template, "rb").read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition',f'attachment; filename="{os.path.basename(template)}"')
-        msg.attach(part)
+        for receiver in receivers:
+            msg = MIMEMultipart()
+            msg['From'] = from_addr
+            msg['To'] = receiver
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
 
-        smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)
-        smtp_obj.set_debuglevel(1)
-        for to_addr in self.handle_file:
-            smtp_obj.sendmail(from_addr, to_addr, msg.as_string())
+            self.file_adding(msg) # добавление вложения
+
+            smtp_obj.sendmail(from_addr, receiver, msg.as_string())
+
         smtp_obj.quit()

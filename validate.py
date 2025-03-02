@@ -6,6 +6,7 @@ import re
 class ConfigAction: # класс для обработки конфиг файла
     config = configparser.ConfigParser()
     config.read('config.ini')
+
     def smtp_configure(self):
         smtp_server = self.config.get("smtp", "smtp_server")
         smtp_port = self.config.get("smtp", "smtp_port")
@@ -23,14 +24,15 @@ class Parse: # класс для обработки аргументов ком�
         parser.add_argument('mail_list', type=argparse.FileType('r'), help='set file with email addresses')# позиционный арг., содержит путь к файлу с адресами
         parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx'], default='docx', help="set template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
         parser.add_argument('-p', '--port', type=int, default=25,help="set SMTP-port for sending") # опциональный арг., выбор порта для отправки письма по SMTP | пока нет обработки
-        parser.add_argument('--sender', type=str, default='test@example', help='set sender email address') # опциональный арг., выбор почтового адреса отправителя | пока нет обработки
-        parser.add_argument('--server', type=str, default='smtp.example', help='set sender server address') # опциональный арг., выбор адреса почтового сервера отправителя | пока нет обработки
+        parser.add_argument('--sender', type=str, default='phishing@marvel', help='set sender email address') # опциональный арг., выбор почтового адреса отправителя | пока нет обработки
+        parser.add_argument('--server', type=str, default='localhost', help='set sender server address') # опциональный арг., выбор адреса почтового сервера отправителя | пока нет обработки
         return parser.parse_args() # возвращает объект с доступом к значениям аргументов
 
 class Validate:
     def __init__(self,  mail_list=None, extension=None): # инициализатор для аргументов | здесь был **kwargs
         self.mail_list = mail_list
         self.extension = extension
+
     def handle_file(self): # обработчик почт
         try:
             with self.mail_list as f: # файл, переданный как аргумент
@@ -47,6 +49,7 @@ class Validate:
             print("No such file")
         except IOError:
             print("EoF Err")
+
     def extension_identify(self):
         if self.extension == 'docx':
             return os.path.join('templates','template.docx')#, "\n docx extension selected"
@@ -54,7 +57,6 @@ class Validate:
             return self.extension#, "\n pdf extension selected"
         elif self.extension == 'xlsx':
             return self.extension#, "\n xlsx extension selected"
-
 
 args = Parse().parser_args() # экземпляр класса Parse
 valid = Validate(mail_list=args.mail_list, extension=args.extension) # экземпляр класса Validate
