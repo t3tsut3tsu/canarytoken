@@ -1,11 +1,12 @@
+import os
 import smtplib
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
 from validate import Validate
 from validate import ConfigAction
-
 
 class SmtpUnite: # Вообще для того, чтобы сформировать письмо
     def __init__(self): # Для экземпляров классов
@@ -21,9 +22,6 @@ class SmtpUnite: # Вообще для того, чтобы сформирова
         receivers = self.handle_file
         body = self.smtp_body
 
-        smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)
-        smtp_obj.set_debuglevel(1)
-
         msg = MIMEMultipart()
         msg['From'] = from_addr
         msg['To'] = receivers
@@ -31,8 +29,14 @@ class SmtpUnite: # Вообще для того, чтобы сформирова
         msg.attach(MIMEText(body, 'plain'))
 
         template = self.extension_identify
-            #to_addr = ""
-            #smtp_obj.sendmail(from_addr, to_addr, msg)
+        part = MIMEBase('application', "octet-stream") # объект для загрузки файла
+        part.set_payload(open(template, "rb").read())
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition',f'attachment; filename="{os.path.basename(template)}"')
+        msg.attach(part)
 
+        smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)
+        smtp_obj.set_debuglevel(1)
+        for to_addr in self.handle_file:
+            smtp_obj.sendmail(from_addr, to_addr, msg.as_string())
         smtp_obj.quit()
-
