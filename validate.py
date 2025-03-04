@@ -4,8 +4,9 @@ import os
 import re
 
 class ConfigAction: # класс для обработки конфиг файла
-    config = configparser.ConfigParser()
-    config.read('config.ini')
+    def __init__(self):
+        self.config = configparser.ConfigParser()
+        self.config.read('config.ini')
 
     def smtp_configure(self):
         smtp_server = self.config.get("smtp", "smtp_server")
@@ -17,7 +18,8 @@ class ConfigAction: # класс для обработки конфиг файл
                                                                                 # либо return {словарь} | пока не мешает
 
 class Parse: # класс для обработки аргументов командной строки
-    def parser_args(self):
+    @staticmethod
+    def parser_args():
         parser = argparse.ArgumentParser(description="Sends template to email addresses and "
                                                      "then we'll start listening and "
                                                      "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
@@ -57,15 +59,3 @@ class Validate:
             return self.extension#, "\n pdf extension selected"
         elif self.extension == 'xlsx':
             return self.extension#, "\n xlsx extension selected"
-
-args = Parse().parser_args() # экземпляр класса Parse
-valid = Validate(mail_list=args.mail_list, extension=args.extension) # экземпляр класса Validate
-conf = ConfigAction() # экземпляр класса ConfigAction
-
-valid_mails = valid.handle_file()
-file_format = valid.extension_identify()
-conf_file = conf.smtp_configure()
-
-print(valid_mails)
-print(file_format)
-print(conf_file)
