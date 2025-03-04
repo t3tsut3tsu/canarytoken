@@ -24,7 +24,7 @@ class Parse: # класс для обработки аргументов ком�
                                                      "then we'll start listening and "
                                                      "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
         parser.add_argument('mail_list', type=argparse.FileType('r'), help='set file with email addresses')# позиционный арг., содержит путь к файлу с адресами
-        parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx'], default='docx', help="set template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
+        parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
         parser.add_argument('-p', '--port', type=int, default=25,help="set SMTP-port for sending") # опциональный арг., выбор порта для отправки письма по SMTP | пока нет обработки
         parser.add_argument('--sender', type=str, default='phishing@marvel', help='set sender email address') # опциональный арг., выбор почтового адреса отправителя | пока нет обработки
         parser.add_argument('--server', type=str, default='localhost', help='set sender server address') # опциональный арг., выбор адреса почтового сервера отправителя | пока нет обработки
@@ -55,6 +55,8 @@ class Validate:
     def extension_identify(self):
         if self.extension == 'docx':
             return os.path.join('templates','template.docx')#, "\n docx extension selected"
+        elif self.extension == 'xml':
+            return os.path.join('templates','template.xml')
         elif self.extension == 'pdf':
             return self.extension#, "\n pdf extension selected"
         elif self.extension == 'xlsx':
