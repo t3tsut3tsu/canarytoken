@@ -4,30 +4,29 @@ import os
 import re
 
 class ConfigAction: # класс для обработки конфиг файла
-    def __init__(self):
-        self.config = configparser.ConfigParser()
-        self.config.read('config.ini')
+    @staticmethod
+    def load_config():
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        return config
 
-    def smtp_configure(self):
-        smtp_server = self.config.get("smtp", "smtp_server")
-        smtp_port = self.config.get("smtp", "smtp_port")
-        smtp_subject = self.config.get("smtp", "subject")
-        smtp_from_addr = self.config.get("smtp", "from_addr")
-        smtp_body = self.config.get("smtp", "body")
-        return smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body # ИСПРАВИТЬ: либо объявить отдельные методы для каждого параметра, \
-                                                                                # либо return {словарь} | пока не мешает
-
+    @staticmethod
+    def smtp_configure(config):
+        smtp_server = config.get('smtp', 'smtp_server')
+        smtp_port = config.get('smtp', 'smtp_port')
+        smtp_subject = config.get('smtp', 'subject')
+        smtp_from_addr = config.get('smtp', 'from_addr')
+        smtp_body = config.get('smtp', 'body')
+        return smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body
+    # Далее другие static методы для обработки разделов конфиги
 class Parse: # класс для обработки аргументов командной строки
     @staticmethod
     def parser_args():
         parser = argparse.ArgumentParser(description="Sends template to email addresses and "
                                                      "then we'll start listening and "
                                                      "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
-        parser.add_argument('mail_list', type=argparse.FileType('r'), help='set file with email addresses')# позиционный арг., содержит путь к файлу с адресами
-        parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
-        parser.add_argument('-p', '--port', type=int, default=25,help="set SMTP-port for sending") # опциональный арг., выбор порта для отправки письма по SMTP | пока нет обработки
-        parser.add_argument('--sender', type=str, default='phishing@marvel', help='set sender email address') # опциональный арг., выбор почтового адреса отправителя | пока нет обработки
-        parser.add_argument('--server', type=str, default='localhost', help='set sender server address') # опциональный арг., выбор адреса почтового сервера отправителя | пока нет обработки
+        parser.add_argument('mail_list', type=argparse.FileType('r'), help="set file with email addresses")# позиционный арг., содержит путь к файлу с адресами
+        parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='docx', help="set template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
         return parser.parse_args() # возвращает объект с доступом к значениям аргументов
 
 class Validate:

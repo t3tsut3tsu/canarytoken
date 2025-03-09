@@ -35,7 +35,7 @@ class SmtpUnite: # Вообще для того, чтобы сформирова
 
     def sending(self): #  создание smtp подключения
         smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)  # объект smtp
-        smtp_obj.set_debuglevel(1)  # отладочные сообщения
+        #smtp_obj.set_debuglevel(1)  # отладочные сообщения
         for receiver in self.handle_file:
             msg = self.letter_forming(receiver)
             smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
