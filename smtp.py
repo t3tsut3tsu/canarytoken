@@ -7,7 +7,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 class SmtpUnite: # Вообще для того, чтобы сформировать письмо
-    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, handle_file, template): # Для экземпляров классов
+    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, handle_file, template):
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         self.smtp_subject = smtp_subject
