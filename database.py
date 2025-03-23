@@ -12,6 +12,7 @@ class Database:
         self.cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uid INTEGER,
                 email_send VARCHAR(255),
                 email_err VARCHAR(255),
                 open_tracker BOOLEAN,
@@ -21,12 +22,13 @@ class Database:
         ''')
         self.connection.commit()
 
-    def db_insert(self):
-        #self.cursor.execute(f'INSERT INTO {self.db_name} () VALUES ()', ())
+    def db_insert_emails(self, emails):
+        for email in emails:
+            self.cursor.execute(f'INSERT INTO {self.table_name} (email_send) VALUES (?)', (email,))
         self.connection.commit()
 
     def db_output(self):
-        self.cursor.execute(f'SELECT * FROM {self.db_name}')
+        self.cursor.execute(f'SELECT * FROM {self.table_name}')
         targets = self.cursor.fetchall()
         for target in targets:
             print(target)

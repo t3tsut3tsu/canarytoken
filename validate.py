@@ -17,10 +17,14 @@ class ConfigAction: # класс для обработки конфиг файл
         return smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body
 
     def db_configure(self):
-        pass
+        db_name = self.config.get('database', 'db_name')
+        table_name = self.config.get('database', 'table_name')
+        return db_name, table_name
 
     def listen_configure(self):
-        pass
+        listen_address = self.config.get('listen', 'listen_address')
+        listen_port = self.config.get('listen', 'listen_port')
+        return listen_address, listen_port
 
 class Parse: # класс для обработки аргументов командной строки
     @staticmethod
