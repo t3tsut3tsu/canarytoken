@@ -6,10 +6,11 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
+from concurrent.futures import ThreadPoolExecutor
 from email import encoders
 
 class SmtpUnite: # чтобы сформировать письмо
-    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, handle_file, template):
+    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, handle_file, template, max_threads = 30):
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         self.smtp_subject = smtp_subject
@@ -17,6 +18,8 @@ class SmtpUnite: # чтобы сформировать письмо
         self.smtp_body = smtp_body
         self.handle_file = handle_file
         self.template = template
+
+        self.max_threads = max_threads
 
     def file_adding(self, msg): # метод формирует вложение в письмо
 
@@ -35,19 +38,23 @@ class SmtpUnite: # чтобы сформировать письмо
         self.file_adding(msg) # добавление вложения
         return msg
 
-    def send_preparing(self, receiver):  #  создание smtp подключения
+    def send_preparing(self, receiver):#  создание smtp подключения
         msg = self.letter_forming(receiver)
         smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)
         # smtp_obj.set_debuglevel(1)  # отладочные сообщения
         smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
         smtp_obj.quit()
 
-    def sending(self): # потоки
-        threads = []
-        for receiver in self.handle_file:
-            thread = threading.Thread(target=self.send_preparing, args=(receiver,))
-            threads.append(thread)
-            thread.start()
+    def sending(self):
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            executor.map(self.send_preparing, self.handle_file)
+    #def sending(self): # потоки
+    #    threads = []
+    #    for receiver in self.handle_file:
+    #        print(threading.active_count(), sep=', ', end=', ')
+    #        thread = threading.Thread(target=self.send_preparing, args=(receiver,))
+    #        threads.append(thread)
+    #        thread.start()
 
-        for thread in threads:
-            thread.join()
+    #    for thread in threads:
+    #        thread.join()

@@ -13,6 +13,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 uid INTEGER,
+                description TEXT NOT NULL,
                 email_send VARCHAR(255),
                 email_err VARCHAR(255),
                 open_tracker BOOLEAN,
@@ -22,9 +23,9 @@ class Database:
         ''')
         self.connection.commit()
 
-    def db_insert_emails(self, emails):
+    def db_insert(self, emails, description):
         for email in emails:
-            self.cursor.execute(f'INSERT INTO {self.table_name} (email_send) VALUES (?)', (email,))
+            self.cursor.execute(f'INSERT INTO {self.table_name} (email_send, description) VALUES (?, ?)', (email, description))
         self.connection.commit()
 
     def db_output(self):
