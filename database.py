@@ -12,7 +12,7 @@ class Database:
         self.cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uid INTEGER,
+                uid VARCHAR(255),
                 description TEXT NOT NULL,
                 email_send VARCHAR(255),
                 email_err VARCHAR(255),

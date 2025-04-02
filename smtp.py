@@ -1,6 +1,6 @@
 import os
 import smtplib
-import threading
+# import threading
 
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -48,6 +48,7 @@ class SmtpUnite: # чтобы сформировать письмо
     def sending(self):
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             executor.map(self.send_preparing, self.handle_file)
+
     #def sending(self): # потоки
     #    threads = []
     #    for receiver in self.handle_file:
