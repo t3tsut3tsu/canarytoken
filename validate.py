@@ -28,6 +28,10 @@ class ConfigAction: # класс для обработки конфиг файл
         listen_port = self.config.get('listen', 'listen_port')
         return listen_address, listen_port
 
+    def template_configure(self):
+        dir_new_templates = self.config.get('templates', 'dir_new_templates')
+        return dir_new_templates
+
 class Parse: # класс для обработки аргументов командной строки
     @staticmethod
     def parser_args():
@@ -35,14 +39,16 @@ class Parse: # класс для обработки аргументов ком�
                                                      "then we'll start listening and "
                                                      "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
         parser.add_argument('mail_list', type=argparse.FileType('r'), help="set the file with an email addresses")# позиционный арг., содержит путь к файлу с адресами
-        parser.add_argument('--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='docx', help="set the template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
+        parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set the template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
         parser.add_argument('-s', '--server', type=str, default='127.0.0.1', help="set an ip address for a tracking")
+        parser.add_argument('-p', '--port', type=str,help="set a port for a tracking (if needed)")
         parser.add_argument('-d', '--description', type=str, help="add a description to your research (if None, will specify the date)")
+        parser.add_argument('-n', '--name', type=str, default='template.xml', help="set a name for template file")
 
         return parser.parse_args() # возвращает объект с доступом к значениям аргументов
 
 class Validate:
-    def __init__(self,  mail_list=None, extension=None, description=None): # инициализатор для аргументов | здесь был **kwargs
+    def __init__(self,  mail_list=None, extension=None, description=None): # инициализатор для аргументов | здесь был **kwargs |
         self.mail_list = mail_list
         self.extension = extension
         self.description = description
@@ -51,7 +57,7 @@ class Validate:
         try:
             with self.mail_list as f: # файл, переданный как аргумент
                 emails = [email.strip() for email in f]
-            regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}")#(r'[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+@[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+[.]+[a-z]{2,}'))
+            regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}") #(r'[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+@[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+[.]+[a-z]{2,}'))
             valid_emails = []
             for email in emails:
                 if re.fullmatch(regex, email):
@@ -63,16 +69,6 @@ class Validate:
             print("No such file")
         except IOError:
             print("EoF Err")
-
-    def extension_identify(self):
-        if self.extension == 'docx':
-            return os.path.join('templates','template.docx')#, "\n docx extension selected"
-        elif self.extension == 'xml':
-            return os.path.join('templates','template.xml')
-        elif self.extension == 'pdf':
-            return self.extension#, "\n pdf extension selected"
-        elif self.extension == 'xlsx':
-            return self.extension#, "\n xlsx extension selected"
 
     def description_checking(self):
         if not self.description:

@@ -1,6 +1,5 @@
 import os
 import smtplib
-# import threading
 
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -41,21 +40,10 @@ class SmtpUnite: # чтобы сформировать письмо
     def send_preparing(self, receiver):#  создание smtp подключения
         msg = self.letter_forming(receiver)
         smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)
-        # smtp_obj.set_debuglevel(1)  # отладочные сообщения
+        #smtp_obj.set_debuglevel(1)  # отладочные сообщения
         smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
-        smtp_obj.quit()
+        smtp_obj.quit() # подумать над тем, чтобы не закрывать соединение каждый раз
 
     def sending(self):
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             executor.map(self.send_preparing, self.handle_file)
-
-    #def sending(self): # потоки
-    #    threads = []
-    #    for receiver in self.handle_file:
-    #        print(threading.active_count(), sep=', ', end=', ')
-    #        thread = threading.Thread(target=self.send_preparing, args=(receiver,))
-    #        threads.append(thread)
-    #        thread.start()
-
-    #    for thread in threads:
-    #        thread.join()

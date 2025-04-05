@@ -2,6 +2,7 @@ import time
 
 from database import Database
 from validate import ConfigAction, Validate, Parse
+from template import Template
 from smtp import SmtpUnite
 from time_tracker import execution_time
 
@@ -14,11 +15,22 @@ def main():
     conf = ConfigAction() # экземпляр класса ConfigAction
     start_time = execution_time(start_time, "create config") # отсчет времени
 
+    conf_template = conf.template_configure()
+    template = Template(server=Parse.parser_args().server, port=Parse.parser_args().port, name=Parse.parser_args().name, dir_new_templates=conf_template) # экземпляр класса Template
+
+    if valid.extension == 'xml':
+        file_format = template.link_changing_xml()
+    elif valid.extension == 'docx':
+        file_format = template.link_changing_docx()
+    elif valid.extension == 'xlsx':
+        file_format = template.link_changing_xlsx()
+    elif valid.extension == 'pdf':
+        file_format = template.link_changing_pdf()
+    else:
+        return False
+
     valid_mails = valid.handle_file() # файл с валидными почтами
     start_time = execution_time(start_time, "valid_mails") # отсчет времени
-
-    file_format = valid.extension_identify() # расширение файла
-    start_time = execution_time(start_time, "file_format") # отсчет времени
 
     description = valid.description_checking()
     start_time = execution_time(start_time, "description") # отсчет времени
