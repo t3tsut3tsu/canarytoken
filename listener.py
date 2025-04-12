@@ -16,3 +16,7 @@ class Listener:
         httpd = server_class(server_address, handler_class)
         print(f'Starting server on {self.listen_address}:{self.listen_port}')
         httpd.serve_forever()
+
+#if __name__ == "__main__":
+#    listener = Listener("127.0.0.1", 4444)
+#    listener.listener()

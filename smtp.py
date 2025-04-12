@@ -1,7 +1,7 @@
 import os
 import smtplib
 
-from datetime import datetime
+#from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from email import encoders
 
 class SmtpUnite: # чтобы сформировать письмо
-    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, handle_file, template, max_threads = 30):
+    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, handle_file, template, max_threads = 15):
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         self.smtp_subject = smtp_subject
@@ -39,11 +39,22 @@ class SmtpUnite: # чтобы сформировать письмо
 
     def send_preparing(self, receiver):#  создание smtp подключения
         msg = self.letter_forming(receiver)
-        smtp_obj = smtplib.SMTP(self.smtp_server, self.smtp_port)
-        #smtp_obj.set_debuglevel(1)  # отладочные сообщения
-        smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
-        smtp_obj.quit() # подумать над тем, чтобы не закрывать соединение каждый раз
+        with smtplib.SMTP(self.smtp_server, self.smtp_port) as smtp_obj:
+            #smtp_obj.set_debuglevel(1)  # отладочные сообщения
+            smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
+        return receiver, True
+
+    @staticmethod
+    def chunks(mails, thread_num):
+        chunks = []
+        for i in range(0, len(mails), thread_num):
+            chunks.append(mails[i: i + thread_num])
+        return chunks
 
     def sending(self):
+        mails_chunks = self.chunks(self.handle_file, max(len(self.handle_file) // self.max_threads, 1)) # если список меньше числа потоков
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            executor.map(self.send_preparing, self.handle_file)
+            for chunk in mails_chunks:
+                for receiver in chunk:
+                    future = executor.submit(self.send_preparing, receiver)
+                    future.result()

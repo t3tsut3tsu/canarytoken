@@ -1,6 +1,5 @@
 import argparse
 import configparser
-import os
 import re
 
 from datetime import datetime
