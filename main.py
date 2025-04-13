@@ -1,7 +1,7 @@
 import time
 
 from database import Database
-from validate import ConfigAction, Validate, Parse
+from validate import ConfigParse, Validate, ArgParse
 from template import Template
 from smtp import SmtpUnite
 from time_tracker import execution_time
@@ -9,14 +9,21 @@ from time_tracker import execution_time
 def main():
     start_time = time.perf_counter() # отсчет времени
 
-    valid = Validate(mail_list=Parse.parser_args().mail_list, extension=Parse.parser_args().extension, description=Parse.parser_args().description) # экземпляр класса Validate
+    mail_list = ArgParse.parser_args().mail_list
+    extension = ArgParse.parser_args().extension
+    description = ArgParse.parser_args().description
+    valid = Validate(mail_list=mail_list, extension=extension, description=description) # экземпляр класса Validate
     start_time = execution_time(start_time, "create valid") # отсчет времени
 
-    conf = ConfigAction() # экземпляр класса ConfigAction
+    conf = ConfigParse() # экземпляр класса ConfigParse
     start_time = execution_time(start_time, "create config") # отсчет времени
 
     conf_template = conf.template_configure()
-    template = Template(server=Parse.parser_args().server, port=Parse.parser_args().port, name=Parse.parser_args().name, dir_new_templates=conf_template) # экземпляр класса Template
+
+    server = ArgParse.parser_args().server
+    port = ArgParse.parser_args().port
+    name = ArgParse.parser_args().name
+    template = Template(server=server, port=port, name=name, dir_new_templates=conf_template) # экземпляр класса Template
 
     if valid.extension == 'xml':
         file_format = template.link_changing_xml()

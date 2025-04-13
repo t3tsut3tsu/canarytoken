@@ -4,7 +4,7 @@ import re
 
 from datetime import datetime
 
-class ConfigAction: # класс для обработки конфиг файла
+class ConfigParse: # класс для обработки конфиг файла
     def __init__(self):
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
@@ -31,7 +31,7 @@ class ConfigAction: # класс для обработки конфиг файл
         dir_new_templates = self.config.get('templates', 'dir_new_templates')
         return dir_new_templates
 
-class Parse: # класс для обработки аргументов командной строки
+class ArgParse: # класс для обработки аргументов командной строки
     @staticmethod
     def parser_args():
         parser = argparse.ArgumentParser(description="Sends template to email addresses and "

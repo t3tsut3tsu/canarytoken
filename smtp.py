@@ -53,8 +53,15 @@ class SmtpUnite: # чтобы сформировать письмо
 
     def sending(self):
         mails_chunks = self.chunks(self.handle_file, max(len(self.handle_file) // self.max_threads, 1)) # если список меньше числа потоков
+        futures = []
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             for chunk in mails_chunks:
                 for receiver in chunk:
-                    future = executor.submit(self.send_preparing, receiver)
-                    future.result()
+                    futures.append(executor.submit(self.send_preparing, receiver))
+                    #future.result()
+
+        for future in futures:
+            try:
+                future.result()
+            except Exception as e:
+                print(f'Error occurred: {e}')
