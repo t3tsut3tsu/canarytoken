@@ -1,9 +1,8 @@
 import time
+import signal
+import sys
 
 from multiprocessing import Process
-#from time import sleep
-
-from concurrent.futures import ProcessPoolExecutor
 from database import Database
 from validate import ConfigParse, Validate, ArgParse
 from template import Template
@@ -19,10 +18,10 @@ def main(server, port, mail_list, description, extension, name):
     start_time = time.perf_counter() # отсчет времени
 
     valid = Validate(mail_list, description=description) # экземпляр класса Validate
-    start_time = execution_time(start_time, "create valid") # отсчет времени
+    #start_time = execution_time(start_time, "create valid") # отсчет времени
 
     conf = ConfigParse() # экземпляр класса ConfigParse
-    start_time = execution_time(start_time, "create config") # отсчет времени
+    #start_time = execution_time(start_time, "create config") # отсчет времени
 
     conf_template = conf.template_configure()
 
@@ -72,9 +71,9 @@ if __name__ == "__main__":
     port = args.port
     name = args.name
 
-    l_proc = Process(target=listening, args=(server, port))
-    l_proc.start()
+    listener_proc = Process(target=listening, args=(server, port))
+    listener_proc.start()
 
     main(server, port, mail_list, description, extension, name)
 
-    l_proc.join()
+    listener_proc.join()

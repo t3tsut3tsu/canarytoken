@@ -21,11 +21,10 @@ class Listener:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\nServer is shutting down (by ctrl+c)")
+            print("Servero finallio (by ctrl+c)")
         finally:
             httpd.server_close()
-            print("Servero finallio")
 
-if __name__ == "__main__":
-    listener = Listener("127.0.0.1", 4444)
-    listener.listener()
+#if __name__ == "__main__":
+#    listener = Listener("127.0.0.1", 4444)
+#    listener.listener()

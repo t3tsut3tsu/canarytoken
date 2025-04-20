@@ -24,10 +24,10 @@ class ConfigParse: # класс для обработки конфиг файл�
         table_name = self.config.get('database', 'table_name')
         return db_name, table_name
 
-    def listen_configure(self):
-        listen_address = self.config.get('listen', 'listen_address')
-        listen_port = self.config.get('listen', 'listen_port')
-        return listen_address, listen_port
+    #def listen_configure(self): # параметры слушателя теперь передаются из командной строки
+    #    listen_address = self.config.get('listen', 'listen_address')
+    #    listen_port = self.config.get('listen', 'listen_port')
+    #    return listen_address, listen_port
 
     def template_configure(self):
         dir_new_templates = self.config.get('templates', 'dir_new_templates')
@@ -47,10 +47,10 @@ class ArgParse: # класс для обработки аргументов ко
         parser = argparse.ArgumentParser(description="Sends template to email addresses and "
                                                      "then we'll start listening and "
                                                      "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
-        parser.add_argument('mail_list', type=argparse.FileType('r'), help="set the file with an email addresses")# позиционный арг., содержит путь к файлу с адресами
-        parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set the template's extension") # опциональный арг., содержит формат файла-шаблона для отправки
+        parser.add_argument('mail_list', type=argparse.FileType('r'), help="set the file with an email addresses")
+        parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set the template's extension")
         parser.add_argument('-s', '--server', type=str, default='127.0.0.1', help="set an ip address for a tracking")
-        parser.add_argument('-p', '--port', type=str, help="set a port for a tracking")
+        parser.add_argument('-p', '--port', type=int, help="set a port for a tracking")
         parser.add_argument('-d', '--description', type=str, help="add a description to your research (if None, will specify the date)")
         parser.add_argument('-n', '--name', type=str, default='template.xml', help="set a name for template file")
 
@@ -66,7 +66,7 @@ class Validate:
         try:
             with self.mail_list as f: # файл, переданный как аргумент #########!!!!!!!!!!!
                 emails = [email.strip() for email in f]
-            regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}") #(r'[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+@[A-Za-z0-9]+([._!$^*-]|[A-Za-z0-9])+[.]+[a-z]{2,}'))
+            regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}")
             valid_emails = []
             for email in emails:
                 if re.fullmatch(regex, email):
@@ -78,6 +78,8 @@ class Validate:
             print("No such file")
         except IOError:
             print("EoF Err")
+        except Exception as e:
+            print(f'Error: {e}')
 
     def description_checking(self):
         if not self.description:

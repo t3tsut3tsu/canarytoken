@@ -21,7 +21,6 @@ class SmtpUnite: # чтобы сформировать письмо
         self.max_threads = max_threads
 
     def file_adding(self, msg): # метод формирует вложение в письмо
-
         part = MIMEBase('application', "octet-stream")  # объект для загрузки файла
         part.set_payload(open(self.template, "rb").read())
         encoders.encode_base64(part)
@@ -64,4 +63,4 @@ class SmtpUnite: # чтобы сформировать письмо
             try:
                 future.result()
             except Exception as e:
-                print(f'Error occurred: {e}')
+                print(f'Error: {e}')
