@@ -25,7 +25,7 @@ def main(server, port, mail_list, description, extension, name):
 
     conf_template = conf.template_configure()
 
-    template = Template(server=server, port=port, name=name, dir_new_templates=conf_template) # экземпляр класса Template
+    template = Template(server, port, name=name, dir_new_templates=conf_template) # экземпляр класса Template
 
     if extension == 'xml':
         file_format = template.link_changing_xml()
@@ -50,7 +50,7 @@ def main(server, port, mail_list, description, extension, name):
     #start_time = execution_time(start_time, "conf_smtp") # отсчет времени
 
     conf_db = conf.db_configure()
-    db = Database(*conf_db)
+    db = Database(conf_db)
     db.db_creating()
     db.db_insert(valid_mails, description)
     db.db_closing()
@@ -76,4 +76,8 @@ if __name__ == "__main__":
 
     main(server, port, mail_list, description, extension, name)
 
-    listener_proc.join()
+    try:
+        listener_proc.join()
+    except KeyboardInterrupt:
+        listener_proc.terminate()
+        listener_proc.join()

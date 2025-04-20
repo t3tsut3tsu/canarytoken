@@ -20,14 +20,8 @@ class ConfigParse: # класс для обработки конфиг файл�
         return smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body
 
     def db_configure(self):
-        db_name = self.config.get('database', 'db_name')
-        table_name = self.config.get('database', 'table_name')
-        return db_name, table_name
-
-    #def listen_configure(self): # параметры слушателя теперь передаются из командной строки
-    #    listen_address = self.config.get('listen', 'listen_address')
-    #    listen_port = self.config.get('listen', 'listen_port')
-    #    return listen_address, listen_port
+        db_path = self.config.get('database', 'db_path')
+        return db_path
 
     def template_configure(self):
         dir_new_templates = self.config.get('templates', 'dir_new_templates')

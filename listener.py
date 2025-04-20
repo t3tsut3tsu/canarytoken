@@ -3,8 +3,8 @@ from datetime import datetime
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        #open_time = datetime.now()
-        #client_ip = self.client_address[0]
+        open_time = datetime.now()
+        client_ip = self.client_address[0]
         self.send_response(200)
         self.send_header("Content-type", "image/png")
         self.end_headers()
