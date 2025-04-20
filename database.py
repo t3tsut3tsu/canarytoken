@@ -15,6 +15,7 @@ class Database:
                 uid VARCHAR(255),
                 description TEXT NOT NULL,
                 email_send VARCHAR(255),
+                ip_addr VARCHAR(16),
                 email_err VARCHAR(255),
                 open_tracker BOOLEAN,
                 get_time DATETIME,
