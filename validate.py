@@ -3,8 +3,6 @@ import configparser
 import re
 
 from datetime import datetime
-#from importlib.metadata import pass_none
-
 
 class ConfigParse: # класс для обработки конфиг файла
     def __init__(self): #, config_path):
@@ -43,8 +41,9 @@ class ArgParse: # класс для обработки аргументов ко
                                                      "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
         parser.add_argument('mail_list', type=argparse.FileType('r'), help="set the file with an email addresses")
         parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set the template's extension")
-        parser.add_argument('-s', '--server', type=str, default='127.0.0.1', help="set an ip address for a tracking")
-        parser.add_argument('-p', '--port', type=int, help="set a port for a tracking")
+        parser.add_argument('-hs', '--http_server', type=str, default='127.0.0.1', help="set an http server address for a tracking")
+        parser.add_argument('-hp', '--http_port', type=int, default=1337, help="set an http-port for a tracking")
+        parser.add_argument('-ss', '--smb_server', type=str, default='127.0.0.1', help="set an smb server address for a tracking")
         parser.add_argument('-d', '--description', type=str, help="add a description to your research (if None, will specify the date)")
         parser.add_argument('-n', '--name', type=str, default='template.xml', help="set a name for template file")
 

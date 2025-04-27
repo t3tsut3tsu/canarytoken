@@ -3,9 +3,10 @@ import os
 from lxml import etree
 
 class Template:
-    def __init__(self, server, port, name, dir_new_templates):
-        self.server = server
-        self.port = port
+    def __init__(self, http_server, http_port, smb_server, name, dir_new_templates):
+        self.http_server = http_server
+        self.http_port = http_port
+        self.smb_server = smb_server
         self.name = name
 
         self.dir_new_templates = dir_new_templates
@@ -16,11 +17,11 @@ class Template:
         tree = etree.parse(file_path)
         root = tree.getroot()
 
-        new_smb = f'smb://{self.server}/canary.png'
-        new_http = f'http://{self.server}:{self.port}/canary.png'
+        new_smb = f'smb://{self.smb_server}/canary.png'
+        new_http = f'http://{self.http_server}:{self.http_port}/canary.png'
 
-        if not self.port:
-            new_http = f'http://{self.server}:1337/canary.png'
+        if not self.http_port:
+            new_http = f'http://{self.http_server}:1337/canary.png'
 
         for relationship in root.findall(".//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship"):
             target = relationship.get('Target')

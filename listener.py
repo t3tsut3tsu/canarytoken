@@ -10,14 +10,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
 class Listener:
-    def __init__(self, server, port):
-        self.server = server
-        self.port = port
+    def __init__(self, http_server, http_port):
+        self.http_server = http_server
+        self.http_port = http_port
 
     def listener(self, server_class=ThreadingHTTPServer, handler_class=Handler):
-        server_address = (self.server, self.port)
+        server_address = (self.http_server, self.http_port)
         httpd = server_class(server_address, handler_class)
-        print(f'Starting server on {self.server}:{self.port}')
+        print(f'Starting server on {self.http_server}:{self.http_port}')
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
