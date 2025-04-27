@@ -1,8 +1,6 @@
 import time
-import signal
-import sys
 
-from multiprocessing import Process
+from multiprocessing import Process, Value
 from database import Database
 from validate import ConfigParse, Validate, ArgParse
 from template import Template
@@ -10,22 +8,23 @@ from smtp import SmtpUnite
 from listener import Listener
 from time_tracker import execution_time
 
-def listening(server, port):
+def listening(server, port, activity):
     listen = Listener(server, port)
-    listen.listener()
+    if activity.value == 0:
+        print("Listener is not running")
+    else:
+        listen.listener()
 
-def main(server, port, mail_list, description, extension, name):
+def main(server, port, mail_list, description, extension, name, activity):
     start_time = time.perf_counter() # отсчет времени
 
-    valid = Validate(mail_list, description=description) # экземпляр класса Validate
-    #start_time = execution_time(start_time, "create valid") # отсчет времени
+    valid = Validate(mail_list, description=description)
 
-    conf = ConfigParse() # экземпляр класса ConfigParse
-    #start_time = execution_time(start_time, "create config") # отсчет времени
+    conf = ConfigParse()
 
     conf_template = conf.template_configure()
 
-    template = Template(server, port, name=name, dir_new_templates=conf_template) # экземпляр класса Template
+    template = Template(server, port, name=name, dir_new_templates=conf_template)
 
     if extension == 'xml':
         file_format = template.link_changing_xml()
@@ -38,23 +37,24 @@ def main(server, port, mail_list, description, extension, name):
     else:
         return False
 
-    valid_mails, invalid_mails = valid.handle_file() # файл с валидными почтами
-    print(f"Valid: {valid_mails}")
-    print(f"Invalid: {invalid_mails}")
-    #start_time = execution_time(start_time, "valid_mails") # отсчет времени
+    valid_mails, invalid_mails = valid.handle_file()
+    print(f"    Valid: {valid_mails}\n")
+    print(f"    Invalid: {invalid_mails}")
+
+    if not valid_mails:
+        print("No valid, all invalid!!!")
+        activity.value = 0
+        return
 
     description = valid.description_checking()
-    #start_time = execution_time(start_time, "description") # отсчет времени
 
     conf_smtp = conf.smtp_configure() # конфиг файл
-    #start_time = execution_time(start_time, "conf_smtp") # отсчет времени
 
     conf_db = conf.db_configure()
     db = Database(conf_db)
     db.db_creating()
     db.db_insert(valid_mails, description)
     db.db_closing()
-    #start_time = execution_time(start_time, "db insert") # отсчет времени
 
     send = SmtpUnite(*conf_smtp, valid_mails, file_format)
     send.sending()
@@ -71,10 +71,11 @@ if __name__ == "__main__":
     port = args.port
     name = args.name
 
-    listener_proc = Process(target=listening, args=(server, port))
+    listener_activity = Value('i', 1)
+    listener_proc = Process(target=listening, args=(server, port, listener_activity))
     listener_proc.start()
 
-    main(server, port, mail_list, description, extension, name)
+    main(server, port, mail_list, description, extension, name, listener_activity)
 
     try:
         listener_proc.join()

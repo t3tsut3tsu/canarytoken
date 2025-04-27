@@ -38,7 +38,7 @@ class SmtpUnite: # чтобы сформировать письмо
 
     def send_preparing(self, receiver):#  создание smtp подключения
         msg = self.letter_forming(receiver)
-        with smtplib.SMTP(self.smtp_server, self.smtp_port) as smtp_obj: #########!!!!!!!!!!!
+        with smtplib.SMTP(self.smtp_server, self.smtp_port) as smtp_obj:
             #smtp_obj.set_debuglevel(1)  # отладочные сообщения
             smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
         return receiver, True
@@ -53,7 +53,7 @@ class SmtpUnite: # чтобы сформировать письмо
     def sending(self):
         mails_chunks = self.chunks(self.handle_file, max(len(self.handle_file) // self.max_threads, 1)) # если список меньше числа потоков
         futures = []
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor: #########!!!!!!!!!!!
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             for chunk in mails_chunks:
                 for receiver in chunk:
                     futures.append(executor.submit(self.send_preparing, receiver))

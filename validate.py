@@ -55,25 +55,33 @@ class Validate:
         self.mail_list = mail_list
         self.description = description
 
-    def handle_file(self): # обработчик почт
+    def handle_file(self): # проверка корректности списка почт, поиск дубликатов
         invalid_emails = []
+        valid_emails = []
+        duplicates = set() # множество для уникальных почт
+
         try:
-            with self.mail_list as f: # файл, переданный как аргумент #########!!!!!!!!!!!
+            with self.mail_list as f:
                 emails = [email.strip() for email in f]
-            regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}")
-            valid_emails = []
-            for email in emails:
+                if not emails:
+                    print("EMPTY")
+                    return valid_emails, invalid_emails
+        except Exception as e:
+            print(f'Error: {e}')
+            return valid_emails, invalid_emails
+
+        regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}")
+        for email in emails:
+            if email in duplicates:  # проверка на дублирование из множества
+                invalid_emails.append(email)
+            else:
+                duplicates.add(email)
                 if re.fullmatch(regex, email):
                     valid_emails.append(email)
                 else:
-                    invalid_emails.append(email) #print(f"Invalid: {email}") # отладка
-            return valid_emails, invalid_emails
-        except FileNotFoundError:
-            print("No such file")
-        except IOError:
-            print("EoF Err")
-        except Exception as e:
-            print(f'Error: {e}')
+                    invalid_emails.append(email)
+
+        return valid_emails, invalid_emails
 
     def description_checking(self):
         if not self.description:
