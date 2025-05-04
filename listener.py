@@ -1,12 +1,13 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer # ThreadingHTTPServer для разделения request по потокам
 from datetime import datetime
 
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         open_time = datetime.now()
         client_ip = self.client_address[0]
         self.send_response(200)
-        self.send_header("Content-type", "image/png")
+        self.send_header('Content-type', 'image/png')
         self.end_headers()
 
 class Listener:
@@ -21,10 +22,6 @@ class Listener:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("Servero finallio (by ctrl+c)")
+            print('Servero finallio (by ctrl+c)')
         finally:
             httpd.server_close()
-
-#if __name__ == "__main__":
-#    listener = Listener("127.0.0.1", 4444)
-#    listener.listener()

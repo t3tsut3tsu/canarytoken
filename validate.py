@@ -1,11 +1,13 @@
 import argparse
 import configparser
+#import os
 import re
 
 from datetime import datetime
 
-class ConfigParse: # класс для обработки конфиг файла
-    def __init__(self): #, config_path):
+
+class ConfigParse:
+    def __init__(self): #, config_path): # путь до конфига в аргументы
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
 
@@ -25,6 +27,15 @@ class ConfigParse: # класс для обработки конфиг файл�
         dir_new_templates = self.config.get('templates', 'dir_new_templates')
         return dir_new_templates
 
+    def smb_configure(self):
+        smb_server = self.config.get('smb', 'smb_server')
+        return smb_server
+
+    def http_configure(self):
+        http_server = self.config.get('http', 'http_server')
+        http_port = self.config.get('http', 'http_port')
+        return http_server, int(http_port)
+
 class ArgParse: # класс для обработки аргументов командной строки
     def __init__(self, mail_list, extension, server, port, description, name):
         self.mail_list = mail_list
@@ -36,21 +47,25 @@ class ArgParse: # класс для обработки аргументов ко
 
     @staticmethod
     def parser_args():
-        parser = argparse.ArgumentParser(description="Sends template to email addresses and "
-                                                     "then we'll start listening and "
-                                                     "waiting for the result until...", epilog="...trust is broken due to honey token.") # объект-обработчик аргументов ArgumentParser
-        parser.add_argument('mail_list', type=argparse.FileType('r'), help="set the file with an email addresses")
-        parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help="set the template's extension")
-        parser.add_argument('-hs', '--http_server', type=str, default='127.0.0.1', help="set an http server address for a tracking")
-        parser.add_argument('-hp', '--http_port', type=int, default=1337, help="set an http-port for a tracking")
-        parser.add_argument('-ss', '--smb_server', type=str, default='127.0.0.1', help="set an smb server address for a tracking")
-        parser.add_argument('-d', '--description', type=str, help="add a description to your research (if None, will specify the date)")
-        parser.add_argument('-n', '--name', type=str, default='template.xml', help="set a name for template file")
+        parser = argparse.ArgumentParser(description='Sends template to email addresses and '
+                                                     'then we\'ll start listening and '
+                                                     'waiting for the result until...', epilog='...trust is broken due to honey token.') # объект-обработчик аргументов ArgumentParser
+        parser.add_argument('mail_list', type=argparse.FileType('r'), help='set the file with an email addresses')
+        parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help='set the template\'s extension')
+        parser.add_argument('-d', '--description', type=str, help='add a description to your research (if None, will specify the date)')
+        parser.add_argument('-n', '--name', type=str, default='template.xml', help='set a name for template file')
+        parser.add_argument('--mode', type=int, choices=range(1, 6), required=True, help=(
+                '1 - only attack (listener + send); '
+                '2 - only listener; '
+                '3 - only send; '
+                '4 - static (create honey token); '
+                '5 - report. '
+        )    )
 
-        return parser.parse_args() # возвращает объект с доступом к значениям аргументов
+        return parser.parse_args()
 
 class Validate:
-    def __init__(self,  mail_list, description): # инициализатор для аргументов | здесь был **kwargs |
+    def __init__(self,  mail_list, description): # здесь был **kwargs |
         self.mail_list = mail_list
         self.description = description
 
@@ -82,7 +97,7 @@ class Validate:
 
         return valid_emails, invalid_emails
 
-    def description_checking(self):
+    def description_checking(self): # вместо описания
         if not self.description:
-            self.description = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.description = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         return self.description
