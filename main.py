@@ -16,14 +16,14 @@ def listening(http_server, http_port, listener_activity):
     else:
         listen.listener()
 
-def main(mail_list, description, extension, name, listener_activity, template):
+def main(emails, description, extension, name, listener_activity, template):
     start_time = time.perf_counter() # отсчет времени
 
-    valid = Validate(mail_list, description=description)
+    valid = Validate(emails, description=description)
 
     valid_mails, invalid_mails = valid.handle_file()
-    print(f'    Valid: {valid_mails}\n')
-    print(f'    Invalid: {invalid_mails}')
+    #print(f'    Valid: {valid_mails}\n')
+    #print(f'    Invalid: {invalid_mails}')
 
     # Base64
     code_var = Encode(valid_mails)
@@ -66,17 +66,18 @@ def main(mail_list, description, extension, name, listener_activity, template):
     start_time = execution_time(start_time, "after sending") # отсчет времени
 
 if __name__ == "__main__":
-    conf = ConfigParse() # из-за переноса ip и port в конфиг
-    http_server, http_port = conf.http_configure()
-    smb_server = conf.smb_configure()
-
     args = ArgParse.parser_args() # в listener и main нужны server, port | чтобы не дублировать
 
-    mail_list = args.mail_list
+    emails = args.emails
     extension = args.extension
     description = args.description
     name = args.name
     attack_mode = args.mode
+    config_path = args.config
+
+    conf = ConfigParse(config_path) # из-за переноса ip и port в конфиг
+    http_server, http_port = conf.http_configure()
+    smb_server = conf.smb_configure()
 
     conf_template = conf.template_configure() # из-за режима static
     template = Template(
@@ -88,13 +89,28 @@ if __name__ == "__main__":
     )
 
     listener_activity = Value('i', 1)
-    if attack_mode == 1:
-        print('Chosen attack mode. Listener and sending are starting')
+    if attack_mode == 'attack':
+        if not emails:
+            print('The list of email addresses for sending is not specified. End of the program')
+        else:
+            print('Chosen attack mode. Listener and sending are starting')
+
+            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity))
+            listener_proc.start()
+
+            main(emails, description, extension, name, listener_activity, template)
+
+            try:
+                listener_proc.join()
+            except KeyboardInterrupt:
+                listener_proc.terminate()
+                listener_proc.join()
+
+    elif attack_mode == 'listener':
+        print('Chosen listener mode. Listener is starting')
 
         listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity))
         listener_proc.start()
-
-        main(mail_list, description, extension, name, listener_activity, template)
 
         try:
             listener_proc.join()
@@ -102,25 +118,16 @@ if __name__ == "__main__":
             listener_proc.terminate()
             listener_proc.join()
 
-    elif attack_mode == 2:
-        print('Chosen only listener mode. Listener is starting')
+    elif attack_mode == 'send':
+        if not emails:
+            print('The list of email addresses for sending is not specified. End of the program')
+        else:
+            print('Chosen sending mode. Sending is starting')
+            main(emails, description, extension, name, listener_activity, template)
 
-        listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity))
-        listener_proc.start()
-
-        try:
-            listener_proc.join()
-        except KeyboardInterrupt:
-            listener_proc.terminate()
-            listener_proc.join()
-
-    elif attack_mode == 3:
-        print('Chosen sending mode. Sending is starting')
-        main(mail_list, description, extension, name, listener_activity, template)
-
-    elif attack_mode == 4:
+    elif attack_mode == 'static':
         print('Chosen static mode.')
         template.link_changing_xml(save=True)
 
-    elif attack_mode == 5:
+    elif attack_mode == 'report':
         print('Chosen report mode. File was saved to ...')

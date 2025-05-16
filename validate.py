@@ -1,15 +1,14 @@
 import argparse
 import configparser
-#import os
 import re
 
 from datetime import datetime
 
 
 class ConfigParse:
-    def __init__(self): #, config_path): # путь до конфига в аргументы
+    def __init__(self, config_path): # путь до конфига в аргументы переместить
         self.config = configparser.ConfigParser()
-        self.config.read('config.ini')
+        self.config.read(config_path)
 
     def smtp_configure(self):
         smtp_server = self.config.get('smtp', 'smtp_server')
@@ -37,8 +36,8 @@ class ConfigParse:
         return http_server, int(http_port)
 
 class ArgParse: # класс для обработки аргументов командной строки
-    def __init__(self, mail_list, extension, server, port, description, name):
-        self.mail_list = mail_list
+    def __init__(self, emails, extension, server, port, description, name):
+        self.emails = emails
         self.extension = extension
         self.server = server
         self.port = port
@@ -50,23 +49,24 @@ class ArgParse: # класс для обработки аргументов ко
         parser = argparse.ArgumentParser(description='Sends template to email addresses and '
                                                      'then we\'ll start listening and '
                                                      'waiting for the result until...', epilog='...trust is broken due to honey token.') # объект-обработчик аргументов ArgumentParser
-        parser.add_argument('mail_list', type=argparse.FileType('r'), help='set the file with an email addresses')
+        parser.add_argument('--emails', type=argparse.FileType('r'), help='set the file with an email addresses')
+        parser.add_argument('--config', type=str, default='config.ini', help='set the config file')
         parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help='set the template\'s extension')
         parser.add_argument('-d', '--description', type=str, help='add a description to your research (if None, will specify the date)')
         parser.add_argument('-n', '--name', type=str, default='template.xml', help='set a name for template file')
-        parser.add_argument('--mode', type=int, choices=range(1, 6), required=True, help=(
-                '1 - only attack (listener + send); '
-                '2 - only listener; '
-                '3 - only send; '
-                '4 - static (create honey token); '
-                '5 - report. '
+        parser.add_argument('--mode', type=str, choices=['attack', 'listener', 'send', 'static', 'report'], required=True, help=(
+                'attack - only attack (listener + send); '
+                'listener - only listener; '
+                'send - only send; '
+                'static - create honey token; '
+                'report - generate report. '
         )    )
 
         return parser.parse_args()
 
 class Validate:
-    def __init__(self,  mail_list, description): # здесь был **kwargs |
-        self.mail_list = mail_list
+    def __init__(self, emails, description): # здесь был **kwargs |
+        self.emails = emails
         self.description = description
 
     def handle_file(self): # проверка корректности списка почт, поиск дубликатов
@@ -75,7 +75,7 @@ class Validate:
         duplicates = set() # множество для уникальных почт
 
         try:
-            with self.mail_list as f:
+            with self.emails as f:
                 emails = [email.strip() for email in f]
                 if not emails:
                     print("EMPTY")

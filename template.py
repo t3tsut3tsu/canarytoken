@@ -1,6 +1,6 @@
 import base64
-import io
 import os
+import io
 
 from lxml import etree
 
@@ -31,38 +31,44 @@ class Template:
         self.dir_new_templates = dir_new_templates
 
     def link_changing_xml(self, valid_mails=None, save=False):
-        file_path = os.path.join('templates','template.xml')
+        xml_data_list = []
+        file_path = os.path.join('templates', 'template.xml')
 
-        tree = etree.parse(file_path)
-        root = tree.getroot()
+        if not save:
+            encoder = Encode(valid_mails)
+            encoded = encoder.encoding()
+            for mail in encoded:
+                tree = etree.parse(file_path)
+                root = tree.getroot()
+                for relationship in root.findall('.//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
+                    target = relationship.get('Target')
+                    if target == 'smb://127.0.0.1:4444/canary.png':
+                        relationship.set('Target', f'smb://{self.smb_server}?token={mail}')
+                    elif target == 'http://127.0.0.1:4444/canary.png':
+                        relationship.set('Target', f'http://{self.http_server}:{self.http_port}?token={mail}')
 
-        new_smb = f'smb://{self.smb_server}/canary.png'
-        new_http = f'http://{self.http_server}:{self.http_port}/canary.png'
+                xml_bytes = io.BytesIO()
+                tree.write(xml_bytes, pretty_print=True, xml_declaration=True, encoding='UTF-8')
+                xml_bytes.seek(0)
+                xml_data_list.append(xml_bytes)
 
-        #if not save:
-        #for email in valid_mails:
-            #new_smb = f'smb://{self.smb_server}?={email}/canary.png'
-            #new_http = f'http://{self.http_server}:{self.http_port}?={email}/canary.png'
+            return xml_data_list
 
-        for relationship in root.findall('.//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
-            target = relationship.get('Target')
-            if target ==  'smb://127.0.0.1:4444/canary.png':
-                relationship.set('Target', new_smb)
-            elif target == 'http://127.0.0.1:4444/canary.png':
-                relationship.set('Target', new_http)
-
-        buffer = io.BytesIO()
-        tree.write(buffer, pretty_print=True, xml_declaration=True, encoding='UTF-8')
-        buffer.seek(0)
-
-        if save:
-            output_path = os.path.join(self.dir_new_templates, self.name)
-            with open(output_path, 'wb') as f:
-                f.write(buffer.getvalue())
-            print(f'File was save to {self.dir_new_templates}')
-            return output_path
         else:
-            return buffer
+            tree = etree.parse(file_path)
+            root = tree.getroot()
+            for relationship in root.findall('.//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
+                target = relationship.get('Target')
+                if target == 'smb://127.0.0.1:4444/canary.png':
+                    relationship.set('Target', f'smb://{self.smb_server}/canary.png')
+                elif target == 'http://127.0.0.1:4444/canary.png':
+                    relationship.set('Target', f'http://{self.http_server}:{self.http_port}/canary.png')
+
+            output_path = os.path.join(self.dir_new_templates, self.name)
+            tree.write(output_path, pretty_print=True, xml_declaration=True, encoding='UTF-8')
+            print(f'File was saved to {self.dir_new_templates}')
+
+            return output_path
 
     def link_changing_docx(self):
         pass

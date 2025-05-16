@@ -1,11 +1,13 @@
 import smtplib
+import time
 
 #from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from email import encoders
+from tqdm import tqdm
 
 
 class SmtpUnite: # чтобы сформировать письмо
@@ -21,25 +23,25 @@ class SmtpUnite: # чтобы сформировать письмо
 
         self.max_threads = max_threads
 
-    def file_adding(self, msg, name): # метод формирует вложение в письмо
-        part = MIMEBase('application', "octet-stream")  # объект для загрузки файла
-        self.template.seek(0)
-        part.set_payload(self.template.getvalue())
+    def file_adding(self, msg, template): # метод формирует вложение в письмо
+        part = MIMEBase('application', "octet-stream")
+        template.seek(0)
+        part.set_payload(template.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename="{name}"')
+        part.add_header('Content-Disposition', f'attachment; filename="{self.name}"')
         msg.attach(part)
 
-    def letter_forming(self, receiver): # формирование тела письма + добавление вложений
+    def letter_forming(self, receiver, template): # формирование тела письма + добавление вложений
         msg = MIMEMultipart()
         msg['From'] = self.smtp_from_addr
         msg['To'] = receiver
         msg['Subject'] = self.smtp_subject
         msg.attach(MIMEText(self.smtp_body, 'plain'))
-        self.file_adding(msg, self.name) # добавление вложения
+        self.file_adding(msg, template) # добавление вложения
         return msg
 
-    def send_preparing(self, receiver):#  создание smtp подключения
-        msg = self.letter_forming(receiver)
+    def send_preparing(self, receiver, template):# создание smtp подключения
+        msg = self.letter_forming(receiver, template)
         with smtplib.SMTP(self.smtp_server, self.smtp_port) as smtp_obj:
             smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
         return receiver, True
@@ -53,14 +55,21 @@ class SmtpUnite: # чтобы сформировать письмо
 
     def sending(self):
         mails_chunks = self.chunks(self.valid_mails, max(len(self.valid_mails) // self.max_threads, 1)) # если список меньше числа потоков
-        futures = []
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            for chunk in mails_chunks:
-                for receiver in chunk:
-                    futures.append(executor.submit(self.send_preparing, receiver))
 
-        for future in futures:
-            try:
-                future.result()
-            except Exception as e:
-                print(f'Error: {e}')
+        total_emails = len(self.valid_mails)
+        with tqdm(total=total_emails) as pbar:
+            with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+                futures = []
+                for chunk in mails_chunks:
+                    for i, receiver in enumerate(chunk):
+                        index = self.valid_mails.index(receiver)
+                        template = self.template[index]
+                        futures.append(executor.submit(self.send_preparing, receiver, template))
+
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                        pbar.update(1)
+                    except Exception as e:
+                        print(f'Error: {e}')
+
