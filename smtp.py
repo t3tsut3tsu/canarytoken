@@ -1,7 +1,6 @@
 import smtplib
-import time
 
-#from datetime import datetime
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -11,7 +10,7 @@ from tqdm import tqdm
 
 
 class SmtpUnite: # чтобы сформировать письмо
-    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, valid_mails, template, name, max_threads = 15):
+    def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, valid_mails, template, name, db, max_threads = 15):
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         self.smtp_subject = smtp_subject
@@ -20,7 +19,7 @@ class SmtpUnite: # чтобы сформировать письмо
         self.valid_mails = valid_mails
         self.template = template
         self.name = name
-
+        self.db = db
         self.max_threads = max_threads
 
     def file_adding(self, msg, template): # метод формирует вложение в письмо
@@ -44,6 +43,12 @@ class SmtpUnite: # чтобы сформировать письмо
         msg = self.letter_forming(receiver, template)
         with smtplib.SMTP(self.smtp_server, self.smtp_port) as smtp_obj:
             smtp_obj.sendmail(self.smtp_from_addr, receiver, msg.as_string())
+
+        if self.db is not None:
+            get_time = datetime.now()
+            token = self.token_by_receiver(receiver)
+            self.db.db_insert_from_smtp(token, receiver, get_time)
+
         return receiver, True
 
     @staticmethod
@@ -52,6 +57,12 @@ class SmtpUnite: # чтобы сформировать письмо
         for i in range(0, len(mails), thread_num):
             chunks.append(mails[i: i + thread_num])
         return chunks
+
+    def token_by_receiver(self, receiver):
+        cursor = self.db.get_connection().cursor()
+        cursor.execute("SELECT token FROM GOOD WHERE recipient = ?", (receiver,))
+        row = cursor.fetchone()
+        return row['token'] if row else None
 
     def sending(self):
         mails_chunks = self.chunks(self.valid_mails, max(len(self.valid_mails) // self.max_threads, 1)) # если список меньше числа потоков

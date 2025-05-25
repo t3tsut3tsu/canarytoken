@@ -35,6 +35,11 @@ class ConfigParse:
         http_port = self.config.get('http', 'http_port')
         return http_server, int(http_port)
 
+    def rep_configure(self):
+        dir_report = self.config.get('report', 'dir_report')
+        rep_name = self.config.get('report', 'rep_name')
+        return dir_report, rep_name
+
 class ArgParse: # класс для обработки аргументов командной строки
     def __init__(self, emails, extension, server, port, description, name):
         self.emails = emails

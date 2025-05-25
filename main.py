@@ -7,20 +7,33 @@ from template import Template, Encode
 from smtp import SmtpUnite
 from listener import Listener
 from time_tracker import execution_time
+from report import RepGenerate
 
 
-def listening(http_server, http_port, listener_activity):
-    listen = Listener(http_server, http_port)
+def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
+    db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
+
+def generate(conf):
+    conf_db = conf.db_configure()
+    db = Database(*conf_db[:4])
+    data = db.db_output(description)
+
+    dir_report, rep_name = conf.rep_configure()
+    rep = RepGenerate(description, dir_report=dir_report, rep_name=rep_name)
+    rep.gen(data)
+
+def listening(http_server, http_port, listener_activity, db_conf):
+    db = Database(db_conf)
+    listen = Listener(http_server, http_port, db)
     if listener_activity.value == 0:
         print('Listener is not running')
     else:
         listen.listener()
 
-def main(emails, description, extension, name, listener_activity, template):
+def main(emails, description, extension, name, listener_activity, template, db_conf):
     start_time = time.perf_counter() # отсчет времени
 
     valid = Validate(emails, description=description)
-
     valid_mails, invalid_mails = valid.handle_file()
     #print(f'    Valid: {valid_mails}\n')
     #print(f'    Invalid: {invalid_mails}')
@@ -42,11 +55,8 @@ def main(emails, description, extension, name, listener_activity, template):
     smtp_from_addr = conf_smtp[3]
 
     # Занесение в БД
-    conf_db = conf.db_configure()
-    db = Database(conf_db)
-    db.db_creating()
-    db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
-    db.db_closing()
+    db = Database(db_conf)
+    update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description)
 
     if extension == 'xml':
         file_format = template.link_changing_xml(valid_mails)
@@ -60,7 +70,7 @@ def main(emails, description, extension, name, listener_activity, template):
         return False
 
     # Процесс отправки
-    send = SmtpUnite(*conf_smtp, valid_mails, file_format, name)
+    send = SmtpUnite(*conf_smtp, valid_mails, file_format, name, db)
     send.sending()
 
     start_time = execution_time(start_time, "after sending") # отсчет времени
@@ -76,6 +86,7 @@ if __name__ == "__main__":
     config_path = args.config
 
     conf = ConfigParse(config_path) # из-за переноса ip и port в конфиг
+    conf_db = conf.db_configure()
     http_server, http_port = conf.http_configure()
     smb_server = conf.smb_configure()
 
@@ -89,16 +100,20 @@ if __name__ == "__main__":
     )
 
     listener_activity = Value('i', 1)
+
+    db_init = Database(conf_db)
+    db_init.db_creating()
+
     if attack_mode == 'attack':
         if not emails:
             print('The list of email addresses for sending is not specified. End of the program')
         else:
             print('Chosen attack mode. Listener and sending are starting')
 
-            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity))
+            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, conf_db))
             listener_proc.start()
 
-            main(emails, description, extension, name, listener_activity, template)
+            main(emails, description, extension, name, listener_activity, template, conf_db)
 
             try:
                 listener_proc.join()
@@ -109,7 +124,7 @@ if __name__ == "__main__":
     elif attack_mode == 'listener':
         print('Chosen listener mode. Listener is starting')
 
-        listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity))
+        listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, conf_db))
         listener_proc.start()
 
         try:
@@ -123,11 +138,12 @@ if __name__ == "__main__":
             print('The list of email addresses for sending is not specified. End of the program')
         else:
             print('Chosen sending mode. Sending is starting')
-            main(emails, description, extension, name, listener_activity, template)
+            main(emails, description, extension, name, listener_activity, template, conf_db)
 
     elif attack_mode == 'static':
         print('Chosen static mode.')
         template.link_changing_xml(save=True)
 
     elif attack_mode == 'report':
-        print('Chosen report mode. File was saved to ...')
+        print('Chosen report mode.')
+        generate(conf)
