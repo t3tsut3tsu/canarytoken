@@ -47,7 +47,7 @@ class SmtpUnite: # чтобы сформировать письмо
         if self.db is not None:
             get_time = datetime.now()
             token = self.token_by_receiver(receiver)
-            self.db.db_insert_from_smtp(token, receiver, get_time)
+            self.db.db_insert_from_smtp(token, get_time)
 
         return receiver, True
 
@@ -60,7 +60,7 @@ class SmtpUnite: # чтобы сформировать письмо
 
     def token_by_receiver(self, receiver):
         cursor = self.db.get_connection().cursor()
-        cursor.execute("SELECT token FROM GOOD WHERE recipient = ?", (receiver,))
+        cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,))
         row = cursor.fetchone()
         return row['token'] if row else None
 
@@ -83,4 +83,3 @@ class SmtpUnite: # чтобы сформировать письмо
                         pbar.update(1)
                     except Exception as e:
                         print(f'Error: {e}')
-

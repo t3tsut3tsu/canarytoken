@@ -7,6 +7,9 @@ class RepGenerate:
         self.dir_report = dir_report
         self.rep_name = rep_name
 
+        if not os.path.exists(self.dir_report):
+            os.makedirs(self.dir_report)
+
     def gen(self, data):
         grouped = defaultdict(list)
         for row in data:

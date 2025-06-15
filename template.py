@@ -1,6 +1,7 @@
 import base64
-import os
 import io
+import os
+import uuid
 
 from lxml import etree
 
@@ -12,14 +13,17 @@ class Encode:
     def encoding(self):
         encoded = []
         for i in self.valid_mails:
-            encoded.append(base64.b64encode(i.encode()).decode())
+            unique_id = str(uuid.uuid4())
+            encoded_email = f'{unique_id}:{base64.b64encode(i.encode()).decode()}'
+            encoded.append(encoded_email)
         return encoded
 
     @staticmethod
     def decoding(encoded):
         decoded = []
         for i in encoded:
-            decoded.append(base64.b64decode(i.encode()).decode())
+            unique_id, encoded_email = i.split(':', 1)
+            decoded.append(base64.b64decode(encoded_email.encode()).decode())
         return decoded
 
 class Template:
@@ -30,13 +34,11 @@ class Template:
         self.name = name
         self.dir_new_templates = dir_new_templates
 
-    def link_changing_xml(self, valid_mails=None, save=False):
+    def link_changing_xml(self, encoded=None, save=False):
         xml_data_list = []
         file_path = os.path.join('templates', 'template.xml')
 
         if not save:
-            encoder = Encode(valid_mails)
-            encoded = encoder.encoding()
             for mail in encoded:
                 tree = etree.parse(file_path)
                 root = tree.getroot()
@@ -64,7 +66,7 @@ class Template:
                 elif target == 'http://127.0.0.1:4444/canary.png':
                     relationship.set('Target', f'http://{self.http_server}:{self.http_port}/canary.png')
 
-            output_path = os.path.join(self.dir_new_templates, self.name)
+            output_path = os.path.join(self.dir_new_templates, f'{self.name}.xml')
             tree.write(output_path, pretty_print=True, xml_declaration=True, encoding='UTF-8')
             print(f'File was saved to {self.dir_new_templates}')
 

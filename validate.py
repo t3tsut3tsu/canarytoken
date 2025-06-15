@@ -56,8 +56,7 @@ class ArgParse: # класс для обработки аргументов ко
                                                      'waiting for the result until...', epilog='...trust is broken due to honey token.') # объект-обработчик аргументов ArgumentParser
         parser.add_argument('--emails', type=argparse.FileType('r'), help='set the file with an email addresses')
         parser.add_argument('--config', type=str, default='config.ini', help='set the config file')
-        parser.add_argument('-e', '--extension', choices=['docx', 'pdf', 'xlsx', 'xml'], default='xml', help='set the template\'s extension')
-        parser.add_argument('-d', '--description', type=str, help='add a description to your research (if None, will specify the date)')
+        parser.add_argument('-d', '--description', action='append', type=str, help='add a description to your research (if None, will specify the date)')
         parser.add_argument('-n', '--name', type=str, default='template.xml', help='set a name for template file')
         parser.add_argument('--mode', type=str, choices=['attack', 'listener', 'send', 'static', 'report'], required=True, help=(
                 'attack - only attack (listener + send); '
@@ -89,7 +88,7 @@ class Validate:
             print(f'Error: {e}')
             return valid_emails, invalid_emails
 
-        regex = re.compile("[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}")
+        regex = re.compile('[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}')
         for email in emails:
             if email in duplicates:  # проверка на дублирование из множества
                 invalid_emails.append(email)

@@ -76,26 +76,25 @@ class Database:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                cursor.execute("UPDATE TOTAL SET ip_addr = ?, open_time = ? WHERE token = ?", (ip_addr, open_time, token))
-                cursor.execute("SELECT id, open_num FROM GOOD WHERE token = ?", (token,))
+                cursor.execute('UPDATE TOTAL SET ip_addr = ?, open_time = ? WHERE token = ?', (ip_addr, open_time, token))
+                cursor.execute('SELECT id, open_num FROM GOOD WHERE token = ?', (token,))
                 row = cursor.fetchone()
                 if row:
                     new_open_num = (row['open_num'] or 0) + 1
-                    cursor.execute("UPDATE GOOD SET ip_addr = ?, open_time = ?, open_num = ? WHERE id = ?",(ip_addr, open_time, new_open_num, row['id']))
+                    cursor.execute('UPDATE GOOD SET ip_addr = ?, open_time = ?, open_num = ? WHERE id = ?',(ip_addr, open_time, new_open_num, row['id']))
                 else:
-                    cursor.execute(
-                        '''INSERT INTO GOOD (token, ip_addr, open_time, open_num) VALUES (?, ?, ?, ?)''',(token, ip_addr, open_time, 1))
+                    cursor.execute( 'INSERT INTO GOOD (token, ip_addr, open_time, open_num) VALUES (?, ?, ?, ?)',(token, ip_addr, open_time, 1))
                 conn.commit()
             finally:
                 conn.close()
 
-    def db_insert_from_smtp(self, token, recipient, get_time):
+    def db_insert_from_smtp(self, token, get_time):
         with self.lock:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                cursor.execute("UPDATE TOTAL SET get_time = ? WHERE token = ? AND recipient = ?",(get_time, token, recipient))
-                cursor.execute("UPDATE GOOD SET get_time = ? WHERE token = ? AND recipient = ?",(get_time, token, recipient))
+                cursor.execute('UPDATE TOTAL SET get_time = ? WHERE token = ?',(get_time, token, ))
+                cursor.execute('UPDATE GOOD SET get_time = ? WHERE token = ?',(get_time, token, ))
                 conn.commit()
             finally:
                 conn.close()
@@ -106,9 +105,11 @@ class Database:
             try:
                 cursor = conn.cursor()
                 if description:
-                    cursor.execute('SELECT * FROM TOTAL WHERE description=?', (description,))
+                    placeholder = ', '.join(['?'] * len(description))
+                    query = f'SELECT * FROM GOOD WHERE description IN ({placeholder})'
+                    cursor.execute(query, description)
                 else:
-                    cursor.execute('SELECT * FROM TOTAL')
+                    cursor.execute('SELECT * FROM GOOD')
                 return cursor.fetchall()
             finally:
                 conn.close()
