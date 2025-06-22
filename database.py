@@ -63,8 +63,8 @@ class Database:
             try:
                 cursor = conn.cursor()
                 for (email, token) in zip(good_emails, tokens):
-                    cursor.execute(f'INSERT INTO TOTAL (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description))
-                    cursor.execute(f'INSERT INTO GOOD (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description))
+                    cursor.execute(f'INSERT INTO TOTAL (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description)) # 1 в функцию
+                    cursor.execute(f'INSERT INTO GOOD (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description)) # 1 в функцию
                 for email in bad_emails:
                     cursor.execute(f'INSERT INTO BAD (recipient, sender, description) VALUES (?, ?, ?)', (email, sender, description))
                 conn.commit()
@@ -76,12 +76,12 @@ class Database:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                cursor.execute('UPDATE TOTAL SET ip_addr = ?, open_time = ? WHERE token = ?', (ip_addr, open_time, token))
+                cursor.execute('UPDATE TOTAL SET ip_addr = ?, open_time = ? WHERE token = ?', (ip_addr, open_time, token)) # 2 в функцию
                 cursor.execute('SELECT id, open_num FROM GOOD WHERE token = ?', (token,))
                 row = cursor.fetchone()
                 if row:
                     new_open_num = (row['open_num'] or 0) + 1
-                    cursor.execute('UPDATE GOOD SET ip_addr = ?, open_time = ?, open_num = ? WHERE id = ?',(ip_addr, open_time, new_open_num, row['id']))
+                    cursor.execute('UPDATE GOOD SET ip_addr = ?, open_time = ?, open_num = ? WHERE id = ?',(ip_addr, open_time, new_open_num, row['id'])) # 2 в функцию
                 else:
                     cursor.execute( 'INSERT INTO GOOD (token, ip_addr, open_time, open_num) VALUES (?, ?, ?, ?)',(token, ip_addr, open_time, 1))
                 conn.commit()
@@ -93,9 +93,21 @@ class Database:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                cursor.execute('UPDATE TOTAL SET get_time = ? WHERE token = ?',(get_time, token, ))
-                cursor.execute('UPDATE GOOD SET get_time = ? WHERE token = ?',(get_time, token, ))
+                cursor.execute('UPDATE TOTAL SET get_time = ? WHERE token = ?',(get_time, token, )) # 3 в функцию
+                cursor.execute('UPDATE GOOD SET get_time = ? WHERE token = ?',(get_time, token, )) # 3 в функцию
                 conn.commit()
+            finally:
+                conn.close()
+
+    def db_sum_of_tricks(self, description):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT SUM(open_num) FROM GOOD WHERE description = ?', (description, ))
+                result = cursor.fetchone()
+                count = result[0] if result else 0
+                return count
             finally:
                 conn.close()
 
@@ -104,12 +116,8 @@ class Database:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                if description:
-                    placeholder = ', '.join(['?'] * len(description))
-                    query = f'SELECT * FROM GOOD WHERE description IN ({placeholder})'
-                    cursor.execute(query, description)
-                else:
-                    cursor.execute('SELECT * FROM GOOD')
+                query = 'SELECT * FROM GOOD WHERE description = ?'
+                cursor.execute(query, (description,))
                 return cursor.fetchall()
             finally:
                 conn.close()

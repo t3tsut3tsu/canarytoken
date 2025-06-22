@@ -13,18 +13,23 @@ from report import RepGenerate
 def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
     db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
 
-def generate(conf, description, db_conf):
+def generate(conf, descriptions, db_conf): # генератор отчетов
     db = Database(db_conf)
-    data = db.db_output(description)
-
+    all_data = [] # для всех описаний
+    open_num_counts = {} # разделять счетчики суммы сработок
+    for description in descriptions:
+        data = db.db_output(description)
+        open_num_count = db.db_sum_of_tricks(description)
+        open_num_counts[description] = open_num_count
+        all_data.extend(data)
     dir_report, rep_name = conf.rep_configure()
-    rep = RepGenerate(description, dir_report=dir_report, rep_name=rep_name)
-    rep.gen(data)
+    rep = RepGenerate(descriptions, dir_report=dir_report, rep_name=rep_name, open_num_counts=open_num_counts)
+    rep.gen(all_data)
 
 def listening(http_server, http_port, listener_activity, db_conf):
     db = Database(db_conf)
     listen = Listener(http_server, http_port, db)
-    if listener_activity.value == 0:
+    if listener_activity.value == 0: # нужен был для прерывания процесса (стр. 50)
         print('Listener is not running')
     else:
         listen.listener()
@@ -40,8 +45,6 @@ def main(emails, description, name, listener_activity, template, db_conf):
     # Base64
     code_var = Encode(valid_mails)
     encoded = code_var.encoding()
-    #print('lets check')
-    #print("\n".join(encoded))
     decoded = code_var.decoding(encoded)
 
     # Запомни, а то забудешь (остановить ли listener, если при запуске attack нет валидных почт?)
@@ -58,7 +61,7 @@ def main(emails, description, name, listener_activity, template, db_conf):
     # Занесение в БД
     db = Database(db_conf)
     update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description)
-
+    # выбор расширения
     if name.endswith('xml'):
         file_format = template.link_changing_xml(encoded)
     elif name.endswith('docx'):
@@ -69,7 +72,7 @@ def main(emails, description, name, listener_activity, template, db_conf):
         file_format = template.link_changing_pdf()
     else:
         listener_activity.value = 0
-        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].')
+        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].') # т.к. расширение указывается из кмд
         return False
 
     # Процесс отправки
@@ -148,6 +151,6 @@ if __name__ == '__main__':
         template.link_changing_xml(save=True)
 
     elif attack_mode == 'report':
-        description = args.description
+        descriptions = args.description
         print('Chosen report mode.')
-        generate(conf, description, conf_db)
+        generate(conf, descriptions, conf_db)

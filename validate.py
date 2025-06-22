@@ -103,5 +103,5 @@ class Validate:
 
     def description_checking(self): # вместо описания
         if not self.description:
-            self.description = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            self.description = datetime.now().isoformat(sep=' ', timespec='seconds')
         return self.description

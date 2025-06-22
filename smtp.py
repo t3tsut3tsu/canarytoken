@@ -51,18 +51,18 @@ class SmtpUnite: # чтобы сформировать письмо
 
         return receiver, True
 
+    def token_by_receiver(self, receiver):
+        cursor = self.db.get_connection().cursor()
+        cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,)) # перенести все SQL-запросы в модуль database?
+        row = cursor.fetchone()
+        return row['token'] if row else None
+
     @staticmethod
     def chunks(mails, thread_num):
         chunks = []
         for i in range(0, len(mails), thread_num):
             chunks.append(mails[i: i + thread_num])
         return chunks
-
-    def token_by_receiver(self, receiver):
-        cursor = self.db.get_connection().cursor()
-        cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,))
-        row = cursor.fetchone()
-        return row['token'] if row else None
 
     def sending(self):
         mails_chunks = self.chunks(self.valid_mails, max(len(self.valid_mails) // self.max_threads, 1)) # если список меньше числа потоков
