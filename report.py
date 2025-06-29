@@ -1,5 +1,20 @@
 import os
+import matplotlib.pyplot as plt
 from collections import defaultdict
+
+class Plots:
+    def __init__(self, valid_mails, invalid_mails):
+        self.valid_mails = valid_mails
+        self.invalid_mails = invalid_mails
+
+    def pie_plot(self, file_path):
+        data = [self.valid_mails, self.invalid_mails]
+        labels = ['Отправлено', 'Не отправлено']
+        plt.figure()
+        plt.pie(data, labels=labels, autopct='%1.1f%%', shadow=True)
+        plt.title('Distribution of Valid and Invalid Mails')
+        plt.savefig(file_path)
+        plt.close()
 
 class RepGenerate:
     def __init__(self, descriptions, dir_report, rep_name, open_num_counts):
@@ -11,80 +26,20 @@ class RepGenerate:
         if not os.path.exists(self.dir_report):
             os.makedirs(self.dir_report)
 
-    def gen(self, data):
+    def gen(self, good_data, bad_data):
         grouped = defaultdict(list)
-        for row in data:
+        for row in good_data:
             grouped[row[f'description']].append(row)
 
         html_parts = []
 
-        html_parts.append('<html>')
-        html_parts.append(f'<head><meta charset="UTF-8"><title>{self.rep_name}</title></head>')
-        html_parts.append('''
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        #plot_file_path = os.path.join(self.dir_report, 'pie.png')
+        #plots = Plots(len(valid_mails), len(invalid_mails))
+        #plots.pie_plot(plot_file_path)
 
-                body {
-                    background-color: #151515;
-                    font-family: "Ubuntu Mono", monospace;
-                    font-size: 20px;
-                    color: #gray;
-                }
-            
-                tbody td:nth-child(odd) {
-                    background-color: #e3e5e6;
-                }
-                
-                tbody td:nth-child(even) {
-                    background-color: #f3f4f5;
-                }
-                
-                table {
-                    width: 80%;
-                    border-collapse: collapse;
-                    border-radius: 20px;
-                    overflow: hidden;
-                    margin: auto;
-                    margin-bottom: 10px;
-                }
-                
-                th, td {
-                    background-color: #a9b2ba;
-                    border: 1px solid #000;
-                    padding: 8px;
-                    text-align: center;
-                }
-                
-                h1 {
-                    color: #f3f4f5;
-                    text-align: center;
-                }
-                
-                h2 {
-                    color: #f3f4f5;
-                    margin-left: 10%;
-                }
-                
-                li {
-                    color: #f3f4f5;
-                    margin-left: 12%;
-                    margin-bottom: 5px;
-                }
-                
-                hr {
-	                margin: -30px auto 50px;
-	                padding: 0;
-                    height: 50px;
-                    border: none;
-                    border-bottom: 1px solid #cb2424;
-                    width: 70%;
-                }
-                
-                .red {
-                    color: #cb2424;
-                }
-            </style>
-        ''')
+        html_parts.append('<html>')
+        html_parts.append(f'<head><meta charset="UTF-8"><link rel="stylesheet" href="../templates/custom/styles.css"><title>{self.rep_name}</title></head>')
+
         html_parts.append('<body>')
 
         if len(self.descriptions) > 1:
@@ -119,8 +74,23 @@ class RepGenerate:
                             '</tr>'
                         )
                 html_parts.append('</table>')
-                if len(self.descriptions) > 1:
-                    html_parts.append('<hr>')
+                #if len(self.descriptions) > 1:
+                html_parts.append('<hr>')
+
+        if bad_data:
+            html_parts.append('<h2>Вложения не были отправлены:</h2>')
+            html_parts.append('<table>')
+            html_parts.append('<tr><th>ID</th><th>Запуск</th><th>Получатель</th></tr>')
+            for row in bad_data:
+                html_parts.append(
+                    '<tr>'
+                    f'<td>{row["id"]}</td>'
+                    f'<td>{row["description"]}</td>'
+                    f'<td>{row["recipient"]}</td>'
+                    '</tr>'
+                )
+            html_parts.append('</table>')
+
         html_parts.append('</body>')
         html_parts.append('</html>')
 

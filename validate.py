@@ -69,7 +69,7 @@ class ArgParse: # класс для обработки аргументов ко
         return parser.parse_args()
 
 class Validate:
-    def __init__(self, emails, description): # здесь был **kwargs |
+    def __init__(self, emails, description):
         self.emails = emails
         self.description = description
 
@@ -101,7 +101,7 @@ class Validate:
 
         return valid_emails, invalid_emails
 
-    def description_checking(self): # вместо описания
+    def description_checking(self): # вместо описания | возможно, лучше убрать и сделать description обязательным аргументом
         if not self.description:
             self.description = datetime.now().isoformat(sep=' ', timespec='seconds')
         return self.description

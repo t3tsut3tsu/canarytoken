@@ -15,24 +15,43 @@ def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, des
 
 def generate(conf, descriptions, db_conf): # генератор отчетов
     db = Database(db_conf)
-    all_data = [] # для всех описаний
+    all_good_data = [] # для всех good описаний
+    all_bad_data = [] # для всех bad описаний
     open_num_counts = {} # разделять счетчики суммы сработок
+
     for description in descriptions:
-        data = db.db_output(description)
+        good_data = db.db_output_good(description)
+        bad_data = db.db_output_bad(description)
+
         open_num_count = db.db_sum_of_tricks(description)
         open_num_counts[description] = open_num_count
-        all_data.extend(data)
+
+        all_good_data.extend(good_data)
+        all_bad_data.extend(bad_data)
+
     dir_report, rep_name = conf.rep_configure()
     rep = RepGenerate(descriptions, dir_report=dir_report, rep_name=rep_name, open_num_counts=open_num_counts)
-    rep.gen(all_data)
+    rep.gen(all_good_data, all_bad_data)
 
 def listening(http_server, http_port, listener_activity, db_conf):
     db = Database(db_conf)
     listen = Listener(http_server, http_port, db)
-    if listener_activity.value == 0: # нужен был для прерывания процесса (стр. 50)
+    if listener_activity.value == 0: # нужен был для прерывания процесса (стр. 51)
         print('Listener is not running')
     else:
         listen.listener()
+
+def get_file_format(name, template, encoded):
+    if name.endswith('xml'):
+        return template.link_changing_xml(encoded)
+    elif name.endswith('docx'):
+        return template.link_changing_docx()
+    elif name.endswith('xlsx'):
+        return template.link_changing_xlsx()
+    elif name.endswith('pdf'):
+        return template.link_changing_pdf()
+    else:
+        return False
 
 def main(emails, description, name, listener_activity, template, db_conf):
     start_time = time.perf_counter() # отсчет времени
@@ -61,18 +80,12 @@ def main(emails, description, name, listener_activity, template, db_conf):
     # Занесение в БД
     db = Database(db_conf)
     update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description)
+
     # выбор расширения
-    if name.endswith('xml'):
-        file_format = template.link_changing_xml(encoded)
-    elif name.endswith('docx'):
-        file_format = template.link_changing_docx()
-    elif name.endswith('xlsx'):
-        file_format = template.link_changing_xlsx()
-    elif name.endswith('pdf'):
-        file_format = template.link_changing_pdf()
-    else:
+    file_format = get_file_format(name, template, encoded)
+    if not file_format:
         listener_activity.value = 0
-        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].') # т.к. расширение указывается из кмд
+        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].')
         return False
 
     # Процесс отправки
@@ -148,7 +161,7 @@ if __name__ == '__main__':
 
     elif attack_mode == 'static':
         print('Chosen static mode.')
-        template.link_changing_xml(save=True)
+        template.link_changing_xml(save=True) # Убрать | все выбрано за пользователя |
 
     elif attack_mode == 'report':
         descriptions = args.description

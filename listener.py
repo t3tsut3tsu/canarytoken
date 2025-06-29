@@ -14,19 +14,30 @@ class Handler(BaseHTTPRequestHandler):
         open_time = datetime.now()
         ip_addr = self.client_address[0]
 
+        host = self.headers['Host']
+        full_link = f'http://{host}{self.path}'
+
         self.send_response(200)
-        self.send_header('Content-type', 'image/png')
-        self.end_headers()
 
         if 'token' in query_params:
             token_value = query_params['token'][0]
-            print(f'Token received: {token_value} from IP: {ip_addr} at {open_time}')
             try:
-                self.db.db_insert_from_listener(token_value, ip_addr, open_time)
+                if self.db.db_is_token_exist(token_value):
+                    print(f'Token was received: {token_value} from IP: {ip_addr} at {open_time}')
+                    self.db.db_insert_good_listener(token_value, ip_addr, open_time)
+                else:
+                    print('It seems someone\'s trying to trick us...')
+                    print(f'Token was received: {token_value} from IP: {ip_addr} at {open_time}')
+                    self.db.db_insert_unknown_listener(token_value, ip_addr, open_time, false_token=1)
             except Exception as e:
                 print(f'Error writing to database: {e}')
         else:
-            print('It seems someone trying to trick us...')
+            print('It seems someone\'s trying to threat us!!!')
+            print(f'Link was received: {full_link} from IP: {ip_addr} at {open_time}')
+            try:
+                self.db.db_insert_unknown_listener(full_link, ip_addr, open_time, false_token=0)
+            except Exception as e:
+                print(f'Error writing to database: {e}')
 
 class Listener:
     def __init__(self, http_server, http_port, db):

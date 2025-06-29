@@ -53,6 +53,16 @@ class Database:
                     recipient VARCHAR(255)
                 )
                 ''')
+
+                cursor.execute('''
+                CREATE TABLE IF NOT EXISTS UNKNOWN (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip_addr VARCHAR(16),
+                    link VARCHAR(255),
+                    open_time DATETIME,
+                    false_token BOOLEAN DEFAULT 0
+                )
+                ''')
                 conn.commit()
             finally:
                 conn.close()
@@ -71,7 +81,7 @@ class Database:
             finally:
                 conn.close()
 
-    def db_insert_from_listener(self, token, ip_addr, open_time):
+    def db_insert_good_listener(self, token, ip_addr, open_time):
         with self.lock:
             conn = self.get_connection()
             try:
@@ -88,6 +98,16 @@ class Database:
             finally:
                 conn.close()
 
+    def db_insert_unknown_listener(self, link, ip_addr, open_time, false_token):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(f'INSERT INTO UNKNOWN (ip_addr, link, open_time, false_token) VALUES (?, ?, ?, ?)',(ip_addr, link, open_time, false_token))
+                conn.commit()
+            finally:
+                conn.close()
+
     def db_insert_from_smtp(self, token, get_time):
         with self.lock:
             conn = self.get_connection()
@@ -96,6 +116,17 @@ class Database:
                 cursor.execute('UPDATE TOTAL SET get_time = ? WHERE token = ?',(get_time, token, )) # 3 в функцию
                 cursor.execute('UPDATE GOOD SET get_time = ? WHERE token = ?',(get_time, token, )) # 3 в функцию
                 conn.commit()
+            finally:
+                conn.close()
+
+    def db_is_token_exist(self, token):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT COUNT(*) FROM GOOD WHERE token = ?', (token,))
+                count = cursor.fetchone()[0]
+                return count > 0
             finally:
                 conn.close()
 
@@ -111,13 +142,43 @@ class Database:
             finally:
                 conn.close()
 
-    def db_output(self, description):
+    def db_output_good(self, description):
         with self.lock:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                query = 'SELECT * FROM GOOD WHERE description = ?'
-                cursor.execute(query, (description,))
+                cursor.execute('SELECT * FROM GOOD WHERE description = ?', (description, ))
+                return cursor.fetchall()
+            finally:
+                conn.close()
+
+    def db_output_bad(self, description):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM BAD WHERE description = ?', (description, ))
+                return cursor.fetchall()
+            finally:
+                conn.close()
+
+    def db_output_unknown(self): # время?
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM UNKNOWN')
+                return cursor.fetchall()
+            finally:
+                conn.close()
+
+    def db_sum_of_mails(self, description, good_emails, bad_emails): # ???
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT SUM(recipient) FROM GOOD WHERE description = ?', (good_emails, description))
+                cursor.execute('SELECT SUM(recipient) FROM BAD WHERE description = ?', (bad_emails, description))
                 return cursor.fetchall()
             finally:
                 conn.close()
