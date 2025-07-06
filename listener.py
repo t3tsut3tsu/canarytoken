@@ -53,7 +53,6 @@ class Listener:
 
         httpd = ThreadingHTTPServer(server_address, handler_factory)
 
-        print(f'Starting server on {self.http_server}:{self.http_port}')
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

@@ -66,7 +66,7 @@ class Template:
                 elif target == 'http://127.0.0.1:4444/canary.png':
                     relationship.set('Target', f'http://{self.http_server}:{self.http_port}/canary.png')
 
-            output_path = os.path.join(self.dir_new_templates, f'{self.name}.xml')
+            output_path = os.path.join(self.dir_new_templates, f'{self.name}')
             tree.write(output_path, pretty_print=True, xml_declaration=True, encoding='UTF-8')
             print(f'File was saved to {self.dir_new_templates}')
 

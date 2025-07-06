@@ -1,5 +1,7 @@
 import time
 
+import sys
+import logging
 from multiprocessing import Process, Value
 from database import Database
 from validate import ConfigParse, Validate, ArgParse
@@ -9,6 +11,17 @@ from listener import Listener
 from time_tracker import execution_time
 from report import RepGenerate
 
+class AlertColors:
+    WARNING = '\033[31m'
+    WELL = '\033[32m'
+    CAREFUL = '\033[33m'
+    END = '\033[0m'
+
+logging.basicConfig(
+    filename='logs\logfile.txt',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
     db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
@@ -36,8 +49,8 @@ def generate(conf, descriptions, db_conf): # генератор отчетов
 def listening(http_server, http_port, listener_activity, db_conf):
     db = Database(db_conf)
     listen = Listener(http_server, http_port, db)
-    if listener_activity.value == 0: # нужен был для прерывания процесса (стр. 51)
-        print('Listener is not running')
+    if listener_activity.value == 0: # нужен был для прерывания процесса
+        print('Listener is not running yet')
     else:
         listen.listener()
 
@@ -55,22 +68,48 @@ def get_file_format(name, template, encoded):
 
 def main(emails, description, name, listener_activity, template, db_conf):
     start_time = time.perf_counter() # отсчет времени
+    db = Database(db_conf)
+
+    is_it_double = db.doubled_description(description)
+    if is_it_double:
+        for row in is_it_double:
+            get_time = row[0]
+            print(f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} You already have this description in the database from {get_time}. '
+                    '\n\tThe launch may ruin the generation of the report. '
+                    f'\n\tPress [No] to {AlertColors.WELL}STOP LAUNCH{AlertColors.END} and come up with another description, if not, {AlertColors.CAREFUL}CONTINUE LAUNCH{AlertColors.END} [Yes].')
+            while True:
+                answer = input().strip()
+                if answer == 'Yes': # CONTINUE
+                    break
+                elif answer == 'No': # STOP
+                    listener_proc.terminate()
+                    listener_proc.join()
+                    sys.exit()
+                else:
+                    print('Invalid. Please answer \'Yes\' or \'No\'.')
 
     valid = Validate(emails, description=description)
     valid_mails, invalid_mails = valid.handle_file()
-    #print(f'    Valid: {valid_mails}\n')
-    #print(f'    Invalid: {invalid_mails}')
+
+    logging.info(f'New launch for: {valid_mails}. \n Incorrect: {invalid_mails}')
+
+    if not valid_mails:
+        print(f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} The list of valid posts is empty. '
+                '\n\tDo you want to continue running the program in listener mode [Yes] or terminate [No]?')
+        while True:
+            answer = input().strip()
+            if answer == 'Yes': # CONTINUE
+                break
+            elif answer == 'No': # STOP
+                listener_proc.terminate()
+                listener_proc.join()
+                sys.exit()
+            else:
+                print('Invalid. Please answer \'Yes\' or \'No\'.')
 
     # Base64
     code_var = Encode(valid_mails)
     encoded = code_var.encoding()
-    decoded = code_var.decoding(encoded)
-
-    # Запомни, а то забудешь (остановить ли listener, если при запуске attack нет валидных почт?)
-    #if not valid_mails:
-    #    print('No valid, all invalid!!!')
-    #    listener_activity.value = 0
-    #    return
 
     description = valid.description_checking()
 
@@ -78,14 +117,13 @@ def main(emails, description, name, listener_activity, template, db_conf):
     smtp_from_addr = conf_smtp[3]
 
     # Занесение в БД
-    db = Database(db_conf)
     update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description)
 
     # выбор расширения
     file_format = get_file_format(name, template, encoded)
     if not file_format:
         listener_activity.value = 0
-        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].')
+        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].') # sys.exit() | почему-то срабатывает при запуске с пустым списком
         return False
 
     # Процесс отправки
@@ -127,6 +165,7 @@ if __name__ == '__main__':
             print('The list of email addresses for sending is not specified. End of the program')
         else:
             print('Chosen attack mode. Listener and sending are getting ready to launch...')
+            print(f'Starting server on {template.http_server}:{template.http_port}')
 
             listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, conf_db))
             listener_proc.start()
@@ -161,7 +200,9 @@ if __name__ == '__main__':
 
     elif attack_mode == 'static':
         print('Chosen static mode.')
-        template.link_changing_xml(save=True) # Убрать | все выбрано за пользователя |
+        file_format = name.split('.')[-1]
+        if file_format == 'xml':
+            template.link_changing_xml(save=True) # Не получилось, не дублируя
 
     elif attack_mode == 'report':
         descriptions = args.description

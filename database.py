@@ -67,14 +67,26 @@ class Database:
             finally:
                 conn.close()
 
+    @staticmethod
+    def selecting_token(cursor, receiver):
+        cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,))
+
+    @staticmethod
+    def inserting(cursor, table, token, email, sender, description):
+        cursor.execute(f'INSERT INTO {table} (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description))
+
+    #@staticmethod
+    #def updating(cursor, table, ip_addr, open_time, token):
+    #    cursor.execute(f'UPDATE {table} SET ip_addr = ?, open_time = ? WHERE token = ?', (ip_addr, open_time, token))
+
     def db_insert(self, good_emails, bad_emails, sender, tokens, description):
         with self.lock:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
                 for (email, token) in zip(good_emails, tokens):
-                    cursor.execute(f'INSERT INTO TOTAL (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description)) # 1 в функцию
-                    cursor.execute(f'INSERT INTO GOOD (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description)) # 1 в функцию
+                    self.inserting(cursor, 'TOTAL', token, email, sender, description)
+                    self.inserting(cursor, 'GOOD', token, email, sender, description)
                 for email in bad_emails:
                     cursor.execute(f'INSERT INTO BAD (recipient, sender, description) VALUES (?, ?, ?)', (email, sender, description))
                 conn.commit()
@@ -179,6 +191,16 @@ class Database:
                 cursor = conn.cursor()
                 cursor.execute('SELECT SUM(recipient) FROM GOOD WHERE description = ?', (good_emails, description))
                 cursor.execute('SELECT SUM(recipient) FROM BAD WHERE description = ?', (bad_emails, description))
+                return cursor.fetchall()
+            finally:
+                conn.close()
+
+    def doubled_description(self, description):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('SELECT get_time FROM TOTAL WHERE description = ? LIMIT 1', (description, ))
                 return cursor.fetchall()
             finally:
                 conn.close()

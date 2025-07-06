@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from email import encoders
-from tqdm import tqdm
+from rich.progress import Progress
 
 
 class SmtpUnite: # чтобы сформировать письмо
@@ -53,7 +53,7 @@ class SmtpUnite: # чтобы сформировать письмо
 
     def token_by_receiver(self, receiver):
         cursor = self.db.get_connection().cursor()
-        cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,)) # перенести все SQL-запросы в модуль database?
+        self.db.selecting_token(cursor, receiver)
         row = cursor.fetchone()
         return row['token'] if row else None
 
@@ -68,7 +68,9 @@ class SmtpUnite: # чтобы сформировать письмо
         mails_chunks = self.chunks(self.valid_mails, max(len(self.valid_mails) // self.max_threads, 1)) # если список меньше числа потоков
 
         total_emails = len(self.valid_mails)
-        with tqdm(total=total_emails) as pbar:
+
+        with Progress() as progress:
+            task = progress.add_task("[red]Sending emails...", total=total_emails)
             with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
                 futures = []
                 for chunk in mails_chunks:
@@ -80,6 +82,6 @@ class SmtpUnite: # чтобы сформировать письмо
                 for future in as_completed(futures):
                     try:
                         future.result()
-                        pbar.update(1)
+                        progress.update(task, advance=1)
                     except Exception as e:
                         print(f'Error: {e}')

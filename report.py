@@ -77,19 +77,19 @@ class RepGenerate:
                 #if len(self.descriptions) > 1:
                 html_parts.append('<hr>')
 
-        if bad_data:
-            html_parts.append('<h2>Вложения не были отправлены:</h2>')
-            html_parts.append('<table>')
-            html_parts.append('<tr><th>ID</th><th>Запуск</th><th>Получатель</th></tr>')
-            for row in bad_data:
-                html_parts.append(
-                    '<tr>'
-                    f'<td>{row["id"]}</td>'
-                    f'<td>{row["description"]}</td>'
-                    f'<td>{row["recipient"]}</td>'
-                    '</tr>'
-                )
-            html_parts.append('</table>')
+        #if bad_data:
+        #    html_parts.append('<h2>Вложения не были отправлены:</h2>')
+        #    html_parts.append('<table>')
+        #    html_parts.append('<tr><th>ID</th><th>Запуск</th><th>Получатель</th></tr>')
+        #    for row in bad_data:
+        #        html_parts.append(
+        #            '<tr>'
+        #            f'<td>{row["id"]}</td>'
+        #            f'<td>{row["description"]}</td>'
+        #            f'<td>{row["recipient"]}</td>'
+        #            '</tr>'
+        #        )
+        #    html_parts.append('</table>')
 
         html_parts.append('</body>')
         html_parts.append('</html>')
