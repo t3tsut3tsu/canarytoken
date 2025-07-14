@@ -1,6 +1,14 @@
+import logging
+
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer # ThreadingHTTPServer для разделения request по потокам
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
+
+logging.basicConfig(
+    filename='logs/logfile.txt',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+    )
 
 class Handler(BaseHTTPRequestHandler):
     def __init__(self, *args, db=None, **kwargs):
@@ -25,10 +33,12 @@ class Handler(BaseHTTPRequestHandler):
                 if self.db.db_is_token_exist(token_value):
                     print(f'Token was received: {token_value} from IP: {ip_addr} at {open_time}')
                     self.db.db_insert_good_listener(token_value, ip_addr, open_time)
+                    logging.debug(f'{token_value} FROM {ip_addr}')
                 else:
                     print('It seems someone\'s trying to trick us...')
                     print(f'Token was received: {token_value} from IP: {ip_addr} at {open_time}')
                     self.db.db_insert_unknown_listener(token_value, ip_addr, open_time, false_token=1)
+                    logging.warning(f'{token_value} FROM {ip_addr}')
             except Exception as e:
                 print(f'Error writing to database: {e}')
         else:

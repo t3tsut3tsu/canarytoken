@@ -58,6 +58,7 @@ class ArgParse: # класс для обработки аргументов ко
         parser.add_argument('--config', type=str, default='config.ini', help='set the config file')
         parser.add_argument('-d', '--description', action='append', type=str, help='add a description to your research (if None, will specify the date)')
         parser.add_argument('-n', '--name', type=str, default='template.xml', help='set a name for template file')
+        parser.add_argument('--merge', help='set a path to the second database for merging (mode report only)')
         parser.add_argument('--mode', type=str, choices=['attack', 'listener', 'send', 'static', 'report'], required=True, help=(
                 'attack - only attack (listener + send); '
                 'listener - only listener; '
@@ -82,7 +83,6 @@ class Validate:
             with self.emails as f:
                 emails = [email.strip() for email in f]
                 if not emails:
-                    print("EMPTY")
                     return valid_emails, invalid_emails
         except Exception as e:
             print(f'Error: {e}')

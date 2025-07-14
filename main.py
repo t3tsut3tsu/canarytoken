@@ -12,16 +12,17 @@ from time_tracker import execution_time
 from report import RepGenerate
 
 class AlertColors:
-    WARNING = '\033[31m'
-    WELL = '\033[32m'
-    CAREFUL = '\033[33m'
+    WARNING = '\033[31m' #red
+    WELL = '\033[32m' #green
+    CAREFUL = '\033[33m' #yellow
+    DEBUG = '\033[34m' #blue
     END = '\033[0m'
 
 logging.basicConfig(
     filename='logs\logfile.txt',
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
-)
+    )
 
 def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
     db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
@@ -55,38 +56,44 @@ def listening(http_server, http_port, listener_activity, db_conf):
         listen.listener()
 
 def get_file_format(name, template, encoded):
-    if name.endswith('xml'):
+    if name.endswith('.xml'):
         return template.link_changing_xml(encoded)
-    elif name.endswith('docx'):
+    elif name.endswith('.docx'):
         return template.link_changing_docx()
-    elif name.endswith('xlsx'):
+    elif name.endswith('.xlsx'):
         return template.link_changing_xlsx()
-    elif name.endswith('pdf'):
+    elif name.endswith('.pdf'):
         return template.link_changing_pdf()
     else:
         return False
 
-def main(emails, description, name, listener_activity, template, db_conf):
-    start_time = time.perf_counter() # отсчет времени
+def cyclic_cycle_wait_for_input(message):
+    print(message)
+    while True:
+        answer = input().strip()
+        if answer == 'Yes':  # CONTINUE
+            logging.debug('The program continues to run.')
+            return True
+        elif answer == 'No':  # STOP
+            logging.debug('The program terminates due to a user choice.')
+            listener_proc.terminate()
+            listener_proc.join()
+            sys.exit(1)
+        else:
+            print('Invalid. Please answer \'Yes\' or \'No\'.')
+
+def main(emails, description, name, template, db_conf): # listener_activity,
+    # start_time = time.perf_counter() # отсчет времени
     db = Database(db_conf)
 
     is_it_double = db.doubled_description(description)
     if is_it_double:
         for row in is_it_double:
             get_time = row[0]
-            print(f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} You already have this description in the database from {get_time}. '
+            message = (f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} You already have this description in the database from {get_time}. '
                     '\n\tThe launch may ruin the generation of the report. '
                     f'\n\tPress [No] to {AlertColors.WELL}STOP LAUNCH{AlertColors.END} and come up with another description, if not, {AlertColors.CAREFUL}CONTINUE LAUNCH{AlertColors.END} [Yes].')
-            while True:
-                answer = input().strip()
-                if answer == 'Yes': # CONTINUE
-                    break
-                elif answer == 'No': # STOP
-                    listener_proc.terminate()
-                    listener_proc.join()
-                    sys.exit()
-                else:
-                    print('Invalid. Please answer \'Yes\' or \'No\'.')
+            cyclic_cycle_wait_for_input(message)
 
     valid = Validate(emails, description=description)
     valid_mails, invalid_mails = valid.handle_file()
@@ -94,18 +101,9 @@ def main(emails, description, name, listener_activity, template, db_conf):
     logging.info(f'New launch for: {valid_mails}. \n Incorrect: {invalid_mails}')
 
     if not valid_mails:
-        print(f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} The list of valid posts is empty. '
-                '\n\tDo you want to continue running the program in listener mode [Yes] or terminate [No]?')
-        while True:
-            answer = input().strip()
-            if answer == 'Yes': # CONTINUE
-                break
-            elif answer == 'No': # STOP
-                listener_proc.terminate()
-                listener_proc.join()
-                sys.exit()
-            else:
-                print('Invalid. Please answer \'Yes\' or \'No\'.')
+        message = (f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} The list of valid mails is empty. '
+                '\n\tDo you want to continue running the program in listener mode [Yes] or terminate it [No]?')
+        cyclic_cycle_wait_for_input(message)
 
     # Base64
     code_var = Encode(valid_mails)
@@ -121,16 +119,22 @@ def main(emails, description, name, listener_activity, template, db_conf):
 
     # выбор расширения
     file_format = get_file_format(name, template, encoded)
-    if not file_format:
-        listener_activity.value = 0
-        print(f'Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"].') # sys.exit() | почему-то срабатывает при запуске с пустым списком
-        return False
+    if file_format is None:
+        message = 'The list of encoded emails is empty. The file format check was skipped.'
+        print(f'{AlertColors.DEBUG}DEBUG:{AlertColors.END} {message}')
+        #logging.debug(message)
+        return
+
+    elif not file_format:
+        message = f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"]. \
+        \n\tDo you want to continue running the program in listener mode [Yes] or terminate it [No]?'
+        cyclic_cycle_wait_for_input(message)
 
     # Процесс отправки
     send = SmtpUnite(*conf_smtp, valid_mails, file_format, name, db)
     send.sending()
 
-    start_time = execution_time(start_time, 'after sending') # отсчет времени
+    # start_time = execution_time(start_time, 'after sending') # отсчет времени
 
 if __name__ == '__main__':
     args = ArgParse.parser_args() # в listener и main нужны server, port | чтобы не дублировать
@@ -139,9 +143,13 @@ if __name__ == '__main__':
     name = args.name
     attack_mode = args.mode
     config_path = args.config
+    merge = args.merge
 
     conf = ConfigParse(config_path) # из-за переноса ip и port в конфиг
     conf_db = conf.db_configure()
+    db_init = Database(conf_db)
+    db_init.db_creating()
+
     http_server, http_port = conf.http_configure()
     smb_server = conf.smb_configure()
 
@@ -156,9 +164,6 @@ if __name__ == '__main__':
 
     listener_activity = Value('i', 1)
 
-    db_init = Database(conf_db)
-    db_init.db_creating()
-
     if attack_mode == 'attack':
         description = args.description[0] # ДУБЛИКАТ из-за добавления функции для генерации отчета по нескольким description
         if not emails:
@@ -170,7 +175,7 @@ if __name__ == '__main__':
             listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, conf_db))
             listener_proc.start()
 
-            main(emails, description, name, listener_activity, template, conf_db)
+            main(emails, description, name, template, conf_db)
 
             try:
                 listener_proc.join()
@@ -196,7 +201,7 @@ if __name__ == '__main__':
             print('The list of email addresses for sending is not specified. End of the program')
         else:
             print('Chosen sending mode. Sending is getting ready to launch...')
-            main(emails, description, name, listener_activity, template, conf_db)
+            main(emails, description, name, template, conf_db)
 
     elif attack_mode == 'static':
         print('Chosen static mode.')
@@ -205,6 +210,13 @@ if __name__ == '__main__':
             template.link_changing_xml(save=True) # Не получилось, не дублируя
 
     elif attack_mode == 'report':
+        if args.merge:
+            merged_db_path = 'database/merged_db.db' # поменять
+            db_init.merging(args.merge, merged_db_path)
+            current_db = merged_db_path
+        else:
+            current_db = conf_db
+
         descriptions = args.description
         print('Chosen report mode.')
-        generate(conf, descriptions, conf_db)
+        generate(conf, descriptions, current_db)

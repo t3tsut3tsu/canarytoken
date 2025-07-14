@@ -67,6 +67,23 @@ class Database:
             finally:
                 conn.close()
 
+    def merging(self, db_path2, merged_db_path):
+        with self.lock:
+            conn1 = self.get_connection()
+            conn2 = sqlite3.connect(db_path2)
+            merged_conn = sqlite3.connect(merged_db_path)
+
+            try:
+                conn1.backup(merged_conn) # оказывается
+                conn2.backup(merged_conn) # не работает
+                merged_conn.commit()
+            except Exception as e:
+                print(f"Error during merge: {e}")
+            finally:
+                conn1.close()
+                conn2.close()
+                merged_conn.close()
+
     @staticmethod
     def selecting_token(cursor, receiver):
         cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,))
