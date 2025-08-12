@@ -1,7 +1,7 @@
 import time
-
 import sys
 import logging
+import logger
 from multiprocessing import Process, Value
 from database import Database
 from validate import ConfigParse, Validate, ArgParse
@@ -17,12 +17,6 @@ class AlertColors:
     CAREFUL = '\033[33m' #yellow
     DEBUG = '\033[34m' #blue
     END = '\033[0m'
-
-logging.basicConfig(
-    filename='logs\logfile.txt',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-    )
 
 def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
     db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
@@ -59,7 +53,7 @@ def get_file_format(name, template, encoded):
     if name.endswith('.xml'):
         return template.link_changing_xml(encoded)
     elif name.endswith('.docx'):
-        return template.link_changing_docx()
+        return template.link_changing_docx(encoded)
     elif name.endswith('.xlsx'):
         return template.link_changing_xlsx()
     elif name.endswith('.pdf'):
@@ -137,6 +131,8 @@ def main(emails, description, name, template, db_conf): # listener_activity,
     # start_time = execution_time(start_time, 'after sending') # отсчет времени
 
 if __name__ == '__main__':
+    logger.logger()
+
     args = ArgParse.parser_args() # в listener и main нужны server, port | чтобы не дублировать
 
     emails = args.emails
@@ -208,6 +204,8 @@ if __name__ == '__main__':
         file_format = name.split('.')[-1]
         if file_format == 'xml':
             template.link_changing_xml(save=True) # Не получилось, не дублируя
+        elif file_format == 'docx':
+            template.link_changing_docx(save=True)
 
     elif attack_mode == 'report':
         if args.merge:

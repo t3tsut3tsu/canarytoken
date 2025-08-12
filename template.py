@@ -2,6 +2,7 @@ import base64
 import io
 import os
 import uuid
+import zipfile
 
 from lxml import etree
 
@@ -75,8 +76,49 @@ class Template:
 
             return output_path
 
-    def link_changing_docx(self):
-        pass
+    def link_changing_docx(self, encoded=None, save=False):
+        # менять word/_rels/document.xml.rels
+
+        docx_path = os.path.join('templates', 'template.docx')
+        docx_files = []
+
+        if not save:
+            for mail in encoded:
+                temp_docx_bytes = io.BytesIO()
+                with zipfile.ZipFile(docx_path, 'r') as zip_ref:
+                    with zipfile.ZipFile(temp_docx_bytes, 'w') as temp_zip_ref:
+                        for item in zip_ref.infolist():
+                            if item.filename == 'word/_rels/document.xml.rels':
+                                with zip_ref.open(item.filename) as file:
+                                    target = file.read().decode('utf-8')
+                                    target = target.replace('smb://127.0.0.1:4444/canary.png', f'smb://{self.smb_server}?token={mail}')
+                                    target = target.replace('http://127.0.0.1:4444/canary.png', f'http://{self.http_server}:{self.http_port}?token={mail}')
+                                    temp_zip_ref.writestr(item.filename, target)
+                            else:
+                                temp_zip_ref.writestr(item, zip_ref.read(item.filename))
+
+                temp_docx_bytes.seek(0)
+                docx_files.append(temp_docx_bytes)
+
+            return docx_files
+
+        else:
+            output_path = os.path.join(self.dir_new_templates, f'{self.name}')
+            with zipfile.ZipFile(docx_path, 'r') as zip_ref:
+                with zipfile.ZipFile(output_path, 'w') as temp_zip_ref:
+                    for item in zip_ref.infolist():
+                        if item.filename == 'word/_rels/document.xml.rels':
+                            with zip_ref.open(item.filename) as file:
+                                target = file.read().decode('utf-8')
+                                target = target.replace('smb://127.0.0.1:4444/canary.png',f'smb://{self.smb_server}/canary.png')
+                                target = target.replace('http://127.0.0.1:4444/canary.png',f'http://{self.http_server}:{self.http_port}/canary.png')
+                                temp_zip_ref.writestr(item.filename, target)
+                        else:
+                            temp_zip_ref.writestr(item, zip_ref.read(item.filename))
+
+            print(f'File was saved to {self.dir_new_templates}')
+
+            return output_path
 
     def link_changing_xlsx(self):
         pass

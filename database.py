@@ -11,78 +11,56 @@ class Database:
         conn.row_factory = sqlite3.Row
         return conn
 
-    def db_creating(self):
-        with self.lock:
-            conn = self.get_connection()
-            try:
-                cursor = conn.cursor()
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS TOTAL (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    description TEXT,
-                    token VARCHAR(255),
-                    sender VARCHAR(255),
-                    recipient VARCHAR(255),
-                    ip_addr VARCHAR(16),
-                    get_time DATETIME,
-                    open_time DATETIME
-                )
-                ''')
-                conn.commit()
+    @staticmethod
+    def creator_main_structure(cursor, conn): # создание правильной структуры БД
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS TOTAL (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            description TEXT,
+            token VARCHAR(255),
+            sender VARCHAR(255),
+            recipient VARCHAR(255),
+            ip_addr VARCHAR(16),
+            get_time DATETIME,
+            open_time DATETIME
+        )
+        ''')
+        conn.commit()
 
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS GOOD (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    description TEXT,
-                    token VARCHAR(255),
-                    sender VARCHAR(255),
-                    recipient VARCHAR(255),
-                    ip_addr VARCHAR(16),
-                    get_time DATETIME,
-                    open_time DATETIME,
-                    open_num INT
-                )
-                ''')
-                conn.commit()
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS GOOD (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            description TEXT,
+            token VARCHAR(255),
+            sender VARCHAR(255),
+            recipient VARCHAR(255),
+            ip_addr VARCHAR(16),
+            get_time DATETIME,
+            open_time DATETIME,
+            open_num INT
+        )
+        ''')
+        conn.commit()
 
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS BAD (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    description TEXT,
-                    sender VARCHAR(255),
-                    recipient VARCHAR(255)
-                )
-                ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS BAD (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            description TEXT,
+            sender VARCHAR(255),
+            recipient VARCHAR(255)
+        )
+        ''')
 
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS UNKNOWN (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip_addr VARCHAR(16),
-                    link VARCHAR(255),
-                    open_time DATETIME,
-                    false_token BOOLEAN DEFAULT 0
-                )
-                ''')
-                conn.commit()
-            finally:
-                conn.close()
-
-    def merging(self, db_path2, merged_db_path):
-        with self.lock:
-            conn1 = self.get_connection()
-            conn2 = sqlite3.connect(db_path2)
-            merged_conn = sqlite3.connect(merged_db_path)
-
-            try:
-                conn1.backup(merged_conn) # оказывается
-                conn2.backup(merged_conn) # не работает
-                merged_conn.commit()
-            except Exception as e:
-                print(f"Error during merge: {e}")
-            finally:
-                conn1.close()
-                conn2.close()
-                merged_conn.close()
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS UNKNOWN (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_addr VARCHAR(16),
+            link VARCHAR(255),
+            open_time DATETIME,
+            false_token BOOLEAN DEFAULT 0
+        )
+        ''')
+        conn.commit()
 
     @staticmethod
     def selecting_token(cursor, receiver):
@@ -95,6 +73,56 @@ class Database:
     #@staticmethod
     #def updating(cursor, table, ip_addr, open_time, token):
     #    cursor.execute(f'UPDATE {table} SET ip_addr = ?, open_time = ? WHERE token = ?', (ip_addr, open_time, token))
+
+    def db_creating(self):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                self.creator_main_structure(cursor, conn)
+            finally:
+                conn.close()
+
+    def merging(self, db_path2, merged_db_path):
+        with self.lock:
+            conn1 = self.get_connection()
+            conn2 = sqlite3.connect(db_path2)
+            merged_conn = sqlite3.connect(merged_db_path)
+
+            try:
+                cursor1 = conn1.cursor()
+                cursor2 = conn2.cursor()
+                merged_cursor = merged_conn.cursor()
+
+                merged_cursor.execute('SELECT MAX(id) FROM TOTAL')
+                max_id = merged_cursor.fetchone()[0] or 0
+
+                for table in ['TOTAL', 'GOOD', 'BAD', 'UNKNOWN']:
+                    cursor1.execute(f'SELECT * FROM {table}')
+                    rows = cursor1.fetchall()
+                    for row in rows:
+                        new_row = (row[0] + max_id,) + row[1:]
+                        placeholders = ', '.join('?' * len(new_row))
+                        merged_cursor.execute(f'INSERT INTO {table} VALUES ({placeholders})', new_row)
+
+                merged_cursor.execute('SELECT MAX(id) FROM TOTAL')
+                max_id = merged_cursor.fetchone()[0] or 0
+
+                for table in ['TOTAL', 'GOOD', 'BAD', 'UNKNOWN']:
+                    cursor2.execute(f'SELECT * FROM {table}')
+                    rows = cursor2.fetchall()
+                    for row in rows:
+                        new_row = (row[0] + max_id + 1,) + row[1:]
+                        placeholders = ', '.join('?' * len(new_row))
+                        merged_cursor.execute(f'INSERT INTO {table} VALUES ({placeholders})', new_row)
+
+                merged_conn.commit()
+            except Exception as e:
+                print(f"Error during merge: {e}")
+            finally:
+                conn1.close()
+                conn2.close()
+                merged_conn.close()
 
     def db_insert(self, good_emails, bad_emails, sender, tokens, description):
         with self.lock:

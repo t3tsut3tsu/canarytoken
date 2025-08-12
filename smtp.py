@@ -1,5 +1,6 @@
 import smtplib
 import logging
+import logger
 
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -9,12 +10,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from email import encoders
 from rich.progress import Progress
 
-logging.basicConfig(
-    filename='logs/logfile.txt',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
+
+logger.logger()
 
 class SmtpUnite: # чтобы сформировать письмо
     def __init__(self, smtp_server, smtp_port, smtp_subject, smtp_from_addr, smtp_body, valid_mails, template, name, db, max_threads = 15):

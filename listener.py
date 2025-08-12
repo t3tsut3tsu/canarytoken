@@ -1,14 +1,12 @@
 import logging
+import logger
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer # ThreadingHTTPServer для разделения request по потокам
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 
-logging.basicConfig(
-    filename='logs/logfile.txt',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+
+logger.logger()
 
 class Handler(BaseHTTPRequestHandler):
     def __init__(self, *args, db=None, **kwargs):
