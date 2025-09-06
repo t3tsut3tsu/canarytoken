@@ -1,9 +1,16 @@
+import shutil
+import os
 import sqlite3
 import threading
 
+from datetime import datetime
+
+
 class Database:
-    def __init__(self, db_path):
+    def __init__(self, db_path, db_merged_path, db_backups):
         self.db_path = db_path
+        self.db_merged_path = db_merged_path
+        self.db_backups = db_backups
         self.lock = threading.Lock()
 
     def get_connection(self):
@@ -83,46 +90,61 @@ class Database:
             finally:
                 conn.close()
 
-    def merging(self, db_path2, merged_db_path):
+    def merging(self):
         with self.lock:
-            conn1 = self.get_connection()
-            conn2 = sqlite3.connect(db_path2)
-            merged_conn = sqlite3.connect(merged_db_path)
+            if not os.path.exists(self.db_backups):
+                os.makedirs(self.db_backups)
+                print(f'Dir for backups: {self.db_backups}')
 
+            filename_db1 = os.path.basename(self.db_path)
+            only_name_db1, ext = os.path.splitext(filename_db1)
+
+            filename_db2 = os.path.basename(self.db_merged_path)
+            only_name_db2, _ = os.path.splitext(filename_db2)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_filename = f'{only_name_db1}-backup-{timestamp}{ext}'
+            backup_path = os.path.join(self.db_backups, backup_filename)
+
+            if os.path.exists(self.db_path):
+                shutil.copy2(self.db_path, backup_path)
+                print(f'Backup is saved to: {backup_path}')
+            else:
+                print(f'Main database is not found at: {self.db_path}')
+                return
+
+            conn = self.get_connection()
             try:
-                cursor1 = conn1.cursor()
-                cursor2 = conn2.cursor()
-                merged_cursor = merged_conn.cursor()
+                cursor = conn.cursor()
+                cursor.execute(f'ATTACH DATABASE "{self.db_merged_path}" AS db2')
 
-                merged_cursor.execute('SELECT MAX(id) FROM TOTAL')
-                max_id = merged_cursor.fetchone()[0] or 0
+                cursor.execute('SELECT MAX(id) FROM TOTAL')
+                max_total_id = cursor.fetchone()[0] or 0
+                cursor.execute(f'INSERT INTO TOTAL (id, description, token, sender, recipient, ip_addr, get_time, open_time) SELECT id + {max_total_id}, description, token, sender, recipient, ip_addr, get_time, open_time FROM db2.TOTAL')
 
-                for table in ['TOTAL', 'GOOD', 'BAD', 'UNKNOWN']:
-                    cursor1.execute(f'SELECT * FROM {table}')
-                    rows = cursor1.fetchall()
-                    for row in rows:
-                        new_row = (row[0] + max_id,) + row[1:]
-                        placeholders = ', '.join('?' * len(new_row))
-                        merged_cursor.execute(f'INSERT INTO {table} VALUES ({placeholders})', new_row)
+                cursor.execute('SELECT MAX(id) FROM GOOD')
+                max_good_id = cursor.fetchone()[0] or 0
+                cursor.execute(f'INSERT INTO GOOD (id, description, token, sender, recipient, ip_addr, get_time, open_time, open_num) SELECT id + {max_good_id}, description, token, sender, recipient, ip_addr, get_time, open_time, open_num FROM db2.GOOD')
 
-                merged_cursor.execute('SELECT MAX(id) FROM TOTAL')
-                max_id = merged_cursor.fetchone()[0] or 0
+                cursor.execute('SELECT MAX(id) FROM BAD')
+                max_bad_id = cursor.fetchone()[0] or 0
+                cursor.execute(f'INSERT INTO BAD (id, description, sender, recipient) SELECT id + {max_bad_id}, description, sender, recipient FROM db2.BAD')
 
-                for table in ['TOTAL', 'GOOD', 'BAD', 'UNKNOWN']:
-                    cursor2.execute(f'SELECT * FROM {table}')
-                    rows = cursor2.fetchall()
-                    for row in rows:
-                        new_row = (row[0] + max_id + 1,) + row[1:]
-                        placeholders = ', '.join('?' * len(new_row))
-                        merged_cursor.execute(f'INSERT INTO {table} VALUES ({placeholders})', new_row)
+                cursor.execute('SELECT MAX(id) FROM UNKNOWN')
+                max_unknown_id = cursor.fetchone()[0] or 0
+                cursor.execute(f'INSERT INTO UNKNOWN (id, ip_addr, link, open_time, false_token) SELECT id + {max_unknown_id}, ip_addr, link, open_time, false_token FROM db2.UNKNOWN')
 
-                merged_conn.commit()
+                conn.commit()
+
             except Exception as e:
-                print(f"Error during merge: {e}")
+                print(f'Merge error: {e}')
+                conn.rollback()
             finally:
-                conn1.close()
-                conn2.close()
-                merged_conn.close()
+                conn.close()
+
+                merged_db_path = os.path.join(os.path.dirname(self.db_path), f'merged-{only_name_db1}-{only_name_db2}{ext}')
+                os.rename(self.db_path, merged_db_path)
+                print(f'Database renamed to: {merged_db_path}')
 
     def db_insert(self, good_emails, bad_emails, sender, tokens, description):
         with self.lock:

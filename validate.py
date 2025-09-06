@@ -20,7 +20,9 @@ class ConfigParse:
 
     def db_configure(self):
         db_path = self.config.get('database', 'db_path')
-        return db_path
+        db_merged_path = self.config.get('database', 'db_merged_path')
+        db_backups = self.config.get('database', 'db_backups')
+        return db_path, db_merged_path, db_backups
 
     def template_configure(self):
         dir_new_templates = self.config.get('templates', 'dir_new_templates')
@@ -58,8 +60,7 @@ class ArgParse: # класс для обработки аргументов ко
         parser.add_argument('--config', type=str, default='config.ini', help='set the config file')
         parser.add_argument('-d', '--description', action='append', type=str, help='add a description to your research (if None, will specify the date)')
         parser.add_argument('-n', '--name', type=str, default='template.xml', help='set a name for template file')
-        parser.add_argument('--merge', help='set a path to the second database for merging (mode report only)')
-        parser.add_argument('--mode', type=str, choices=['attack', 'listener', 'send', 'static', 'report'], required=True, help=(
+        parser.add_argument('--mode', type=str, choices=['attack', 'listener', 'send', 'static', 'report', 'merge'], required=True, help=(
                 'attack - only attack (listener + send); '
                 'listener - only listener; '
                 'send - only send; '

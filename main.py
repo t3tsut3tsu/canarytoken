@@ -21,8 +21,8 @@ class AlertColors:
 def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
     db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
 
-def generate(conf, descriptions, db_conf): # генератор отчетов
-    db = Database(db_conf)
+def generate(conf, descriptions, db_path, db_merged_path): # генератор отчетов
+    db = Database(db_path, db_merged_path, db_backups)
     all_good_data = [] # для всех good описаний
     all_bad_data = [] # для всех bad описаний
     open_num_counts = {} # разделять счетчики суммы сработок
@@ -41,8 +41,8 @@ def generate(conf, descriptions, db_conf): # генератор отчетов
     rep = RepGenerate(descriptions, dir_report=dir_report, rep_name=rep_name, open_num_counts=open_num_counts)
     rep.gen(all_good_data, all_bad_data)
 
-def listening(http_server, http_port, listener_activity, db_conf):
-    db = Database(db_conf)
+def listening(http_server, http_port, listener_activity):
+    db = Database(db_path, db_merged_path, db_backups)
     listen = Listener(http_server, http_port, db)
     if listener_activity.value == 0: # нужен был для прерывания процесса
         print('Listener is not running yet')
@@ -76,9 +76,9 @@ def cyclic_cycle_wait_for_input(message):
         else:
             print('Invalid. Please answer \'Yes\' or \'No\'.')
 
-def main(emails, description, name, template, db_conf): # listener_activity,
+def main(emails, description, name, template, db_path, db_merged_path, db_backups): # listener_activity,
     # start_time = time.perf_counter() # отсчет времени
-    db = Database(db_conf)
+    db = Database(db_path, db_merged_path, db_backups)
 
     is_it_double = db.doubled_description(description)
     if is_it_double:
@@ -139,11 +139,10 @@ if __name__ == '__main__':
     name = args.name
     attack_mode = args.mode
     config_path = args.config
-    merge = args.merge
 
     conf = ConfigParse(config_path) # из-за переноса ip и port в конфиг
-    conf_db = conf.db_configure()
-    db_init = Database(conf_db)
+    db_path, db_merged_path, db_backups = conf.db_configure()
+    db_init = Database(db_path, db_merged_path, db_backups)
     db_init.db_creating()
 
     http_server, http_port = conf.http_configure()
@@ -168,10 +167,10 @@ if __name__ == '__main__':
             print('Chosen attack mode. Listener and sending are getting ready to launch...')
             print(f'Starting server on {template.http_server}:{template.http_port}')
 
-            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, conf_db))
+            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, db_path, db_merged_path))
             listener_proc.start()
 
-            main(emails, description, name, template, conf_db)
+            main(emails, description, name, template, db_path, db_merged_path, db_backups)
 
             try:
                 listener_proc.join()
@@ -182,7 +181,7 @@ if __name__ == '__main__':
     elif attack_mode == 'listener':
         print('Chosen listener mode. Listener is getting ready to launch...')
 
-        listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, conf_db))
+        listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, db_path, db_merged_path, db_backups))
         listener_proc.start()
 
         try:
@@ -197,7 +196,7 @@ if __name__ == '__main__':
             print('The list of email addresses for sending is not specified. End of the program')
         else:
             print('Chosen sending mode. Sending is getting ready to launch...')
-            main(emails, description, name, template, conf_db)
+            main(emails, description, name, template, db_path, db_merged_path, db_backups)
 
     elif attack_mode == 'static':
         print('Chosen static mode.')
@@ -208,13 +207,10 @@ if __name__ == '__main__':
             template.link_changing_docx(save=True)
 
     elif attack_mode == 'report':
-        if args.merge:
-            merged_db_path = 'database/merged_db.db' # поменять
-            db_init.merging(args.merge, merged_db_path)
-            current_db = merged_db_path
-        else:
-            current_db = conf_db
-
         descriptions = args.description
         print('Chosen report mode.')
-        generate(conf, descriptions, current_db)
+        generate(conf, descriptions, db_path, db_merged_path)
+
+    elif attack_mode == 'merge':
+        print('Chosen merge mode.')
+        db_init.merging()
