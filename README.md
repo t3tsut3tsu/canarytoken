@@ -5,11 +5,16 @@
 
 ## Quick installation
 
-1. Clone the repo:
+1. Clone the repo: 
+
    ```git clone https://github.com/t3tsut3tsu/canarytoken```
 2. Move to the directory:
+   
    ```cd canarytoken/```
-3. Install dependencies:
+4. Install dependencies:
+   
    ```pip install -r requirements.txt```
-4. Run
+6. Run
+   
    ```python main.py <>```
+
