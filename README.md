@@ -1,3 +1,6 @@
+[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/t3tsut3tsu/canarytoken/blob/master/README.md)
+[![ru](https://img.shields.io/badge/lang-ru-green.svg)](https://github.com/t3tsut3tsu/canarytoken/blob/master/README.ru.md)
+
 ## How to use
 
 1. Clone
@@ -11,4 +14,5 @@
 6. Do something
   
    ![image](https://github.com/user-attachments/assets/71a0fb5f-ec56-4023-bb2a-ec940ec6554e)
+
 
