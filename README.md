@@ -1,18 +1,15 @@
 [![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/t3tsut3tsu/canarytoken/blob/master/README.md)
 [![ru](https://img.shields.io/badge/lang-ru-green.svg)](https://github.com/t3tsut3tsu/canarytoken/blob/master/README.ru.md)
 
-## How to use
+# Canarytoken
 
-1. Clone
-  
+## Quick installation
+
+1. Clone the repo:
    ```git clone https://github.com/t3tsut3tsu/canarytoken```
-
-4. Move
-   
+2. Move to the directory:
    ```cd canarytoken/```
-
-6. Do something
-  
-   ![image](https://github.com/user-attachments/assets/71a0fb5f-ec56-4023-bb2a-ec940ec6554e)
-
-
+3. Install dependencies:
+   ```pip install -r requirements.txt```
+4. Run
+   ```python main.py <>```
