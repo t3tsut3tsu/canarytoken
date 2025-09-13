@@ -1,0 +1,7 @@
+2025-09-13 19:36:38,402 - DEBUG - The program terminates due to a user choice.
+2025-09-13 19:38:57,405 - DEBUG - The program terminates due to a user choice.
+2025-09-13 19:39:22,043 - DEBUG - The program terminates due to a user choice.
+2025-09-13 19:39:34,520 - DEBUG - The program terminates due to a user choice.
+2025-09-13 19:39:46,255 - DEBUG - The program terminates due to a user choice.
+2025-09-13 19:39:59,105 - DEBUG - The program terminates due to a user choice.
+2025-09-13 19:42:53,522 - DEBUG - The program terminates due to a user choice.

@@ -36,8 +36,8 @@ class Template:
         self.dir_new_templates = dir_new_templates
 
     def link_changing_xml(self, encoded=None, save=False):
-        if not encoded: # для пустого списка почт
-            return None
+        #if not encoded: # для пустого списка почт
+        #    return None # эта херня сломала мне static, переделать
 
         xml_data_list = []
         file_path = os.path.join('templates', 'template.xml')

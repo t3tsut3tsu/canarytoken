@@ -41,7 +41,7 @@ def generate(conf, descriptions, db_path, db_merged_path): # генератор 
     rep = RepGenerate(descriptions, dir_report=dir_report, rep_name=rep_name, open_num_counts=open_num_counts)
     rep.gen(all_good_data, all_bad_data)
 
-def listening(http_server, http_port, listener_activity):
+def listening(http_server, http_port, listener_activity, db_path, db_merged_path, db_backups):
     db = Database(db_path, db_merged_path, db_backups)
     listen = Listener(http_server, http_port, db)
     if listener_activity.value == 0: # нужен был для прерывания процесса
@@ -50,9 +50,9 @@ def listening(http_server, http_port, listener_activity):
         listen.listener()
 
 def get_file_format(name, template, encoded):
-    if name.endswith('.xml'):
+    if name.split('.')[-1] == 'xml':
         return template.link_changing_xml(encoded)
-    elif name.endswith('.docx'):
+    elif name.split('.')[-1] == 'docx':
         return template.link_changing_docx(encoded)
     elif name.endswith('.xlsx'):
         return template.link_changing_xlsx()
@@ -165,9 +165,9 @@ if __name__ == '__main__':
             print('The list of email addresses for sending is not specified. End of the program')
         else:
             print('Chosen attack mode. Listener and sending are getting ready to launch...')
-            print(f'Starting server on {template.http_server}:{template.http_port}')
+            #print(f'Starting server on {template.http_server}:{template.http_port}')
 
-            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, db_path, db_merged_path))
+            listener_proc = Process(target=listening, args=(http_server, http_port, listener_activity, db_path, db_merged_path, db_backups))
             listener_proc.start()
 
             main(emails, description, name, template, db_path, db_merged_path, db_backups)
@@ -202,7 +202,9 @@ if __name__ == '__main__':
         print('Chosen static mode.')
         file_format = name.split('.')[-1]
         if file_format == 'xml':
+            print('format=xml')
             template.link_changing_xml(save=True) # Не получилось, не дублируя
+            print('done')
         elif file_format == 'docx':
             template.link_changing_docx(save=True)
 
