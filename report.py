@@ -100,3 +100,4 @@ class RepGenerate:
             f.write('\n'.join(html_parts))
 
         print(f'File was saved to {self.dir_report}.')
+

@@ -1,6 +1,7 @@
 import argparse
 import configparser
 import re
+import os
 
 from datetime import datetime
 
@@ -22,6 +23,11 @@ class ConfigParse:
         db_path = self.config.get('database', 'db_path')
         db_merged_path = self.config.get('database', 'db_merged_path')
         db_backups = self.config.get('database', 'db_backups')
+
+        db_path = os.path.normpath(db_path) # кроссплатформенность
+        db_merged_path = os.path.normpath(db_merged_path)
+        db_backups = os.path.normpath(db_backups)
+
         return db_path, db_merged_path, db_backups
 
     def template_configure(self):

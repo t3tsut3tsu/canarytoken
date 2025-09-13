@@ -8,7 +8,7 @@ from validate import ConfigParse, Validate, ArgParse
 from template import Template, Encode
 from smtp import SmtpUnite
 from listener import Listener
-from time_tracker import execution_time
+#from time_tracker import execution_time
 from report import RepGenerate
 
 class AlertColors:
