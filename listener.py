@@ -54,7 +54,7 @@ class Listener:
         self.db = db
 
     def listener(self):
-        print(f'==================================Starting server on {self.http_server}:{self.http_port}==================================')
+        #print(f'==================================Starting server on {self.http_server}:{self.http_port}==================================')
         server_address = (self.http_server, self.http_port)
 
         def handler_factory(*args, **kwargs):
