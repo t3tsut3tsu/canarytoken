@@ -202,9 +202,7 @@ if __name__ == '__main__':
         print('Chosen static mode.')
         file_format = name.split('.')[-1]
         if file_format == 'xml':
-            print('format=xml')
             template.link_changing_xml(save=True) # Не получилось, не дублируя
-            print('done')
         elif file_format == 'docx':
             template.link_changing_docx(save=True)
 

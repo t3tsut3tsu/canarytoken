@@ -1,7 +1,6 @@
 import argparse
 import configparser
 import re
-import os
 
 from datetime import datetime
 
@@ -54,7 +53,7 @@ class ArgParse: # класс для обработки аргументов ко
 
     @staticmethod
     def parser_args():
-        parser = argparse.ArgumentParser(description='Sends template to email addresses and '
+        parser = argparse.ArgumentParser(prog='canarytoken', description='Sends template to email addresses and '
                                                      'then we\'ll start listening and '
                                                      'waiting for the result until...', epilog='...trust is broken due to honey token.') # объект-обработчик аргументов ArgumentParser
         parser.add_argument('--emails', type=argparse.FileType('r'), help='set the file with an email addresses')
@@ -66,7 +65,8 @@ class ArgParse: # класс для обработки аргументов ко
                 'listener - only listener; '
                 'send - only send; '
                 'static - create honey token; '
-                'report - generate report. '
+                'report - generate report; '
+                'merge - merging databases to create one common report. '
         )    )
 
         return parser.parse_args()

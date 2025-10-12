@@ -31,7 +31,7 @@ class SmtpUnite: # чтобы сформировать письмо
         template.seek(0)
         part.set_payload(template.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename="{self.name}"')
+        part.add_header('Content-Disposition', f'attachment; filename=\'{self.name}\'')
         msg.attach(part)
 
     def letter_forming(self, receiver, template): # формирование тела письма + добавление вложений
@@ -71,7 +71,7 @@ class SmtpUnite: # чтобы сформировать письмо
     def sending(self):
         if not self.template: # для неверного формата файла
             return
-        logging.debug('Sending will start any second now.')
+        logging.debug('Sending will start any second now...')
         mails_chunks = self.chunks(self.valid_mails, max(len(self.valid_mails) // self.max_threads, 1)) # если список меньше числа потоков
 
         total_emails = len(self.valid_mails)

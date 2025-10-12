@@ -78,3 +78,17 @@ hr {
 .red {
     color: #cb2424;
 }
+
+.image-container {
+    margin-left: 10%;
+    margin-top: 2%;
+    margin-bottom: 2%;
+    border: 2px solid black;
+    display: inline-block;
+    border-radius: 20px;
+}
+
+img {
+    border-radius: 20px;
+    display: block;
+}
