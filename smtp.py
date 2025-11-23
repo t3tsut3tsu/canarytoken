@@ -31,7 +31,7 @@ class SmtpUnite: # чтобы сформировать письмо
         template.seek(0)
         part.set_payload(template.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename=\'{self.name}\'')
+        part.add_header('Content-Disposition', f'attachment; filename="{self.name}"')
         msg.attach(part)
 
     def letter_forming(self, receiver, template): # формирование тела письма + добавление вложений
@@ -51,13 +51,13 @@ class SmtpUnite: # чтобы сформировать письмо
         if self.db is not None:
             get_time = datetime.now()
             token = self.token_by_receiver(receiver)
-            self.db.db_insert_from_smtp(token, get_time)
+            self.db.db_insert_from_smtp(token, get_time) # Подумать
 
         return receiver, True
 
     def token_by_receiver(self, receiver):
         cursor = self.db.get_connection().cursor()
-        self.db.selecting_token(cursor, receiver)
+        self.db.selecting_token(cursor, receiver) # Подумать
         row = cursor.fetchone()
         return row['token'] if row else None
 

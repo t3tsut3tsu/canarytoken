@@ -3,6 +3,8 @@ import io
 import os
 import uuid
 import zipfile
+import tempfile
+import win32com.client
 
 from lxml import etree
 
@@ -49,7 +51,7 @@ class Template:
                 for relationship in root.findall('.//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
                     target = relationship.get('Target')
                     if target == 'smb://127.0.0.1:4444/canary.png':
-                        relationship.set('Target', f'smb://{self.smb_server}?token={mail}')
+                        relationship.set('Target', f'\\\\canary\\{self.smb_server}?token={mail}')
                     elif target == 'http://127.0.0.1:4444/canary.png':
                         relationship.set('Target', f'http://{self.http_server}:{self.http_port}?token={mail}')
 
@@ -66,7 +68,7 @@ class Template:
             for relationship in root.findall('.//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
                 target = relationship.get('Target')
                 if target == 'smb://127.0.0.1:4444/canary.png':
-                    relationship.set('Target', f'smb://{self.smb_server}/canary.png')
+                    relationship.set('Target', f'\\\\canary\\{self.smb_server}/canary.png')
                 elif target == 'http://127.0.0.1:4444/canary.png':
                     relationship.set('Target', f'http://{self.http_server}:{self.http_port}/canary.png')
 
@@ -91,7 +93,7 @@ class Template:
                             if item.filename == 'word/_rels/document.xml.rels':
                                 with zip_ref.open(item.filename) as file:
                                     target = file.read().decode('utf-8')
-                                    target = target.replace('smb://127.0.0.1:4444/canary.png', f'smb://{self.smb_server}?token={mail}')
+                                    target = target.replace('smb://127.0.0.1:4444/canary.png', f'\\\\canary\\{self.smb_server}?token={mail}')
                                     target = target.replace('http://127.0.0.1:4444/canary.png', f'http://{self.http_server}:{self.http_port}?token={mail}')
                                     temp_zip_ref.writestr(item.filename, target)
                             else:
@@ -110,7 +112,7 @@ class Template:
                         if item.filename == 'word/_rels/document.xml.rels':
                             with zip_ref.open(item.filename) as file:
                                 target = file.read().decode('utf-8')
-                                target = target.replace('smb://127.0.0.1:4444/canary.png',f'smb://{self.smb_server}/canary.png')
+                                target = target.replace('smb://127.0.0.1:4444/canary.png',f'\\\\canary\\{self.smb_server}/canary.png')
                                 target = target.replace('http://127.0.0.1:4444/canary.png',f'http://{self.http_server}:{self.http_port}/canary.png')
                                 temp_zip_ref.writestr(item.filename, target)
                         else:
@@ -119,6 +121,58 @@ class Template:
             print(f'File was saved to {self.dir_new_templates}')
 
             return output_path
+
+    def link_changing_lnk(self, encoded=None, save=False):
+
+        icon_path = os.path.abspath(os.path.join('templates', 'pdf_icon.ico'))
+        lnk_files = []
+        base_name = os.path.splitext(self.name)[0]
+        lnk_filename = base_name + '.pdf.lnk'
+
+        if not save:
+            for mail in encoded:
+                with tempfile.NamedTemporaryFile(suffix='.lnk', delete=False) as temp_lnk:
+                    temp_lnk_path = temp_lnk.name
+
+                shell = win32com.client.Dispatch("WScript.Shell")
+                shortcut = shell.CreateShortcut(temp_lnk_path)
+                shortcut.TargetPath = f'http://{self.http_server}:{self.http_port}?token={mail}'
+                shortcut.IconLocation = icon_path
+                shortcut.Save()
+
+                with open(temp_lnk_path, 'rb') as f:
+                    lnk_data = f.read()
+
+                os.unlink(temp_lnk_path)
+
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    zip_file.writestr(lnk_filename, lnk_data)
+
+                zip_buffer.seek(0)
+                lnk_files.append(zip_buffer)
+
+            return lnk_files
+
+    def link_changing_lnk_static(self):
+        icon_path = os.path.abspath(os.path.join('templates', 'pdf_icon.ico'))
+
+        shell = win32com.client.Dispatch('WScript.Shell')
+
+        target = f'http://{self.http_server}:{self.http_port}'
+        output_path = os.path.join(self.dir_new_templates, f'{self.name}')
+
+        lnk = shell.CreateShortCut(output_path)
+
+        lnk.TargetPath = target
+        lnk.IconLocation = icon_path
+        lnk.WorkingDirectory = os.path.dirname(target)
+
+        lnk.save()
+
+        print(f'File was saved to {self.dir_new_templates}')
+
+        return output_path
 
     def link_changing_xlsx(self):
         pass

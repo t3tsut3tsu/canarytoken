@@ -1,6 +1,9 @@
-import time
+#import time
 import sys
 import logging
+
+from pyexpat.errors import messages
+
 import logger
 from multiprocessing import Process, Value
 from database import Database
@@ -54,12 +57,19 @@ def get_file_format(name, template, encoded):
         return template.link_changing_xml(encoded)
     elif name.split('.')[-1] == 'docx':
         return template.link_changing_docx(encoded)
-    elif name.endswith('.xlsx'):
+    elif name.split('.')[-1] == 'xlsx':
         return template.link_changing_xlsx()
-    elif name.endswith('.pdf'):
+    elif name.split('.')[-1] == 'pdf':
         return template.link_changing_pdf()
+    elif name.split('.')[-1] == 'zip':
+        return template.link_changing_lnk(encoded)
+    elif name.split('.')[-1] == 'lnk':
+        message_lnk = f'ERROR: If you want to send LNK files, try: <filename>.<extension>.zip (like test.pdf.zip)\n\tDo you want to continue running the program in listener mode [Yes] or terminate it [No]?'
+        cyclic_cycle_wait_for_input(message_lnk)
     else:
-        return False
+        message = f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml", "lnk"]. \
+            \n\tDo you want to continue running the program in listener mode [Yes] or terminate it [No]?'
+        cyclic_cycle_wait_for_input(message)
 
 def cyclic_cycle_wait_for_input(message):
     print(message)
@@ -92,7 +102,8 @@ def main(emails, description, name, template, db_path, db_merged_path, db_backup
     valid = Validate(emails, description=description)
     valid_mails, invalid_mails = valid.handle_file()
 
-    logging.info(f'New launch for: {valid_mails}. \n Incorrect: {invalid_mails}')
+    if valid_mails:
+        logging.info(f'New launch for: {valid_mails}. \n Incorrect: {invalid_mails}')
 
     if not valid_mails:
         message = (f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} The list of valid mails is empty. '
@@ -111,18 +122,13 @@ def main(emails, description, name, template, db_path, db_merged_path, db_backup
     # Занесение в БД
     update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description)
 
-    # выбор расширения
+    # выбор шаблона
     file_format = get_file_format(name, template, encoded)
     if file_format is None:
         message = 'The list of encoded emails is empty. The file format check was skipped.'
         print(f'{AlertColors.DEBUG}DEBUG:{AlertColors.END} {message}')
         #logging.debug(message)
         return
-
-    elif not file_format:
-        message = f'\t{AlertColors.WARNING}WARNING:{AlertColors.END} Invalid file type for: {name}. Must be one of ["docx", "pdf", "xlsx", "xml"]. \
-        \n\tDo you want to continue running the program in listener mode [Yes] or terminate it [No]?'
-        cyclic_cycle_wait_for_input(message)
 
     # Процесс отправки
     send = SmtpUnite(*conf_smtp, valid_mails, file_format, name, db)
@@ -205,6 +211,8 @@ if __name__ == '__main__':
             template.link_changing_xml(save=True) # Не получилось, не дублируя
         elif file_format == 'docx':
             template.link_changing_docx(save=True)
+        elif file_format == 'lnk':
+            template.link_changing_lnk_static()
 
     elif attack_mode == 'report':
         descriptions = args.description

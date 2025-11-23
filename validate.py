@@ -90,7 +90,7 @@ class Validate:
             print(f'Error: {e}')
             return valid_emails, invalid_emails
 
-        regex = re.compile('[A-Za-z0-9._!$^*%+-]+@[A-Za-z0-9._!$^*%+-]+[A-Za-z-0-9]{2,}')
+        regex = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         for email in emails:
             if email in duplicates:  # проверка на дублирование из множества
                 invalid_emails.append(email)
