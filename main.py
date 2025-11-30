@@ -1,9 +1,6 @@
 #import time
 import sys
 import logging
-
-from pyexpat.errors import messages
-
 import logger
 from multiprocessing import Process, Value
 from database import Database
@@ -58,9 +55,9 @@ def get_file_format(name, template, encoded):
     elif name.split('.')[-1] == 'docx':
         return template.link_changing_docx(encoded)
     elif name.split('.')[-1] == 'xlsx':
-        return template.link_changing_xlsx()
+        return template.link_changing_xlsx(encoded)
     elif name.split('.')[-1] == 'pdf':
-        return template.link_changing_pdf()
+        return template.link_changing_pdf(encoded)
     elif name.split('.')[-1] == 'zip':
         return template.link_changing_lnk(encoded)
     elif name.split('.')[-1] == 'lnk':
@@ -211,6 +208,8 @@ if __name__ == '__main__':
             template.link_changing_xml(save=True) # Не получилось, не дублируя
         elif file_format == 'docx':
             template.link_changing_docx(save=True)
+        elif file_format == 'xlsx':
+            template.link_changing_xlsx(save=True)
         elif file_format == 'lnk':
             template.link_changing_lnk_static()
 

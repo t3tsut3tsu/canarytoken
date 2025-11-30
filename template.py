@@ -1,10 +1,11 @@
 import base64
 import io
 import os
+import sys
 import uuid
 import zipfile
 import tempfile
-import win32com.client
+
 
 from lxml import etree
 
@@ -123,59 +124,69 @@ class Template:
             return output_path
 
     def link_changing_lnk(self, encoded=None, save=False):
+        if sys.platform.startswith('win'):
+            import win32com.client
+            icon_path = os.path.abspath(os.path.join('templates', 'pdf_icon.ico'))
+            lnk_files = []
 
-        icon_path = os.path.abspath(os.path.join('templates', 'pdf_icon.ico'))
-        lnk_files = []
-        base_name = os.path.splitext(self.name)[0]
-        lnk_filename = base_name + '.pdf.lnk'
+            base_name = self.name.split('.')[0]
+            lnk_filename = base_name + '.pdf.lnk'
+            zip_filename = base_name + '.zip'
 
-        if not save:
-            for mail in encoded:
-                with tempfile.NamedTemporaryFile(suffix='.lnk', delete=False) as temp_lnk:
-                    temp_lnk_path = temp_lnk.name
+            if not save:
+                for mail in encoded:
+                    with tempfile.NamedTemporaryFile(suffix='.lnk', delete=False) as temp_lnk:
+                        temp_lnk_path = temp_lnk.name
 
-                shell = win32com.client.Dispatch("WScript.Shell")
-                shortcut = shell.CreateShortcut(temp_lnk_path)
-                shortcut.TargetPath = f'http://{self.http_server}:{self.http_port}?token={mail}'
-                shortcut.IconLocation = icon_path
-                shortcut.Save()
+                    shell = win32com.client.Dispatch("WScript.Shell")
+                    lnk = shell.CreateShortcut(temp_lnk_path)
+                    lnk.TargetPath = f'http://{self.http_server}:{self.http_port}?token={mail}'
+                    lnk.IconLocation = icon_path
+                    lnk.Save()
 
-                with open(temp_lnk_path, 'rb') as f:
-                    lnk_data = f.read()
+                    with open(temp_lnk_path, 'rb') as f:
+                        lnk_data = f.read()
 
-                os.unlink(temp_lnk_path)
+                    os.unlink(temp_lnk_path)
 
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    zip_file.writestr(lnk_filename, lnk_data)
+                    zip_buffer = io.BytesIO()
+                    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        zip_file.writestr(lnk_filename, lnk_data)
 
-                zip_buffer.seek(0)
-                lnk_files.append(zip_buffer)
+                    zip_buffer.seek(0)
+                    lnk_files.append(zip_buffer)
 
-            return lnk_files
+                return lnk_files
+        else:
+            print('LNK does not generating in Linux yet')
 
     def link_changing_lnk_static(self):
-        icon_path = os.path.abspath(os.path.join('templates', 'pdf_icon.ico'))
+        if sys.platform.startswith('win'):
+            import win32com.client
+            icon_path = os.path.abspath(os.path.join('templates', 'pdf_icon.ico'))
 
-        shell = win32com.client.Dispatch('WScript.Shell')
+            shell = win32com.client.Dispatch('WScript.Shell')
 
-        target = f'http://{self.http_server}:{self.http_port}'
-        output_path = os.path.join(self.dir_new_templates, f'{self.name}')
+            target = f'http://{self.http_server}:{self.http_port}'
+            output_path = os.path.join(self.dir_new_templates, f'{self.name}')
 
-        lnk = shell.CreateShortCut(output_path)
+            lnk = shell.CreateShortCut(output_path)
 
-        lnk.TargetPath = target
-        lnk.IconLocation = icon_path
-        lnk.WorkingDirectory = os.path.dirname(target)
+            lnk.TargetPath = target
+            lnk.IconLocation = icon_path
+            lnk.WorkingDirectory = os.path.dirname(target)
 
-        lnk.save()
+            lnk.save()
 
-        print(f'File was saved to {self.dir_new_templates}')
+            print(f'File was saved to {self.dir_new_templates}')
 
-        return output_path
+            return output_path
 
-    def link_changing_xlsx(self):
+        else:
+            print('LNK does not generating in Linux yet')
+
+    def link_changing_pdf(self, encoded=None, save=False):
         pass
 
-    def link_changing_pdf(self):
+    def link_changing_xlsx(self, encoded=None, save=False):
         pass
