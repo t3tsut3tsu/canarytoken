@@ -80,8 +80,6 @@ class Template:
             return output_path
 
     def link_changing_docx(self, encoded=None, save=False):
-        # менять word/_rels/document.xml.rels
-
         docx_path = os.path.join('templates', 'template.docx')
         docx_files = []
 
@@ -186,7 +184,177 @@ class Template:
             print('LNK does not generating in Linux yet')
 
     def link_changing_pdf(self, encoded=None, save=False):
-        pass
+        pdf_files = []
+
+        if not save:
+            if encoded:
+                for mail in encoded:
+                    pdf_content = f'''%PDF-1.7
+%âãÏÓ
+
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 3 0 R
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Pages
+  /Kids [4 0 R]
+  /Count 1
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Action
+  /S /URI
+  /URI (http://{self.http_server}:{self.http_port}/?token={mail})
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Contents 5 0 R
+  /Resources <<
+    /Font <<
+      /F1 <<
+        /Type /Font
+        /Subtype /Type1
+        /BaseFont /Helvetica
+      >>
+    >>
+  >>
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 50
+>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+(Документ) Tj
+ET
+endstream
+endobj
+
+xref
+0 6
+0000000000 65535 f
+0000000010 00000 n
+0000000050 00000 n
+0000000090 00000 n
+0000000150 00000 n
+0000000220 00000 n
+trailer
+<<
+  /Size 6
+  /Root 1 0 R
+>>
+startxref
+300
+%%EOF'''
+
+                    temp_pdf_bytes = io.BytesIO()
+                    temp_pdf_bytes.write(pdf_content.encode('utf-8'))
+                    temp_pdf_bytes.seek(0)
+                    pdf_files.append(temp_pdf_bytes)
+
+            return pdf_files
+
+        else:
+            pdf_content = f'''%PDF-1.7
+%âãÏÓ
+
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 3 0 R
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Pages
+  /Kids [4 0 R]
+  /Count 1
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Action
+  /S /URI
+  /URI (http://{self.http_server}:{self.http_port})
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Contents 5 0 R
+  /Resources <<
+    /Font <<
+      /F1 <<
+        /Type /Font
+        /Subtype /Type1
+        /BaseFont /Helvetica
+      >>
+    >>
+  >>
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 50
+>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+(Документ) Tj
+ET
+endstream
+endobj
+
+xref
+0 6
+0000000000 65535 f
+0000000010 00000 n
+0000000050 00000 n
+0000000090 00000 n
+0000000150 00000 n
+0000000220 00000 n
+trailer
+<<
+  /Size 6
+  /Root 1 0 R
+>>
+startxref
+300
+%%EOF'''
+
+            output_path = os.path.join(self.dir_new_templates, self.name)
+
+            with open(output_path, 'wb') as f:
+                f.write(pdf_content.encode('utf-8'))
+
+            print(f'File was saved to {self.dir_new_templates}')
+
+            return output_path
 
     def link_changing_xlsx(self, encoded=None, save=False):
         pass

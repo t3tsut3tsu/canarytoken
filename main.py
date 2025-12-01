@@ -212,6 +212,8 @@ if __name__ == '__main__':
             template.link_changing_xlsx(save=True)
         elif file_format == 'lnk':
             template.link_changing_lnk_static()
+        elif file_format == 'pdf':
+            template.link_changing_pdf(save=True)
 
     elif attack_mode == 'report':
         descriptions = args.description
