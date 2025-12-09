@@ -242,7 +242,7 @@ stream
 BT
 /F1 12 Tf
 50 750 Td
-(Документ) Tj
+(Important Document) Tj
 ET
 endstream
 endobj
@@ -325,7 +325,7 @@ stream
 BT
 /F1 12 Tf
 50 750 Td
-(Документ) Tj
+(Important Document) Tj
 ET
 endstream
 endobj

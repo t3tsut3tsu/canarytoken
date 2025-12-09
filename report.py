@@ -53,18 +53,13 @@ class RepGenerate:
 
     def gen(self, good_data, bad_data):
         grouped = defaultdict(list)
+        grouped_bad = defaultdict(list)
 
         for row in good_data:
             grouped[row['description']].append(row)
 
-        valid_recipients = len(set(row['recipient'] for row in good_data))
-        invalid_recipients = len(set(row['recipient'] for row in bad_data))
-
-        plot_file_path = os.path.join(self.report_dir, 'pie.png')
-
-        plots = Plots(valid_recipients, invalid_recipients)
-        plots.pie_plot(plot_file_path)
-        abs_plot_path = os.path.abspath(plot_file_path)
+        for row in bad_data:
+            grouped_bad[row['description']].append(row)
 
         html_parts = []
 
@@ -80,6 +75,19 @@ class RepGenerate:
         for description in self.descriptions:
             if description in grouped:
                 rows = grouped[description]
+
+                current_good_data = grouped.get(description, [])
+                current_bad_data = grouped_bad.get(description, [])
+
+                valid_recipients = len(set(row['recipient'] for row in current_good_data))
+                invalid_recipients = len(set(row['recipient'] for row in current_bad_data))
+
+                plot_file_path = os.path.join(self.report_dir, f'pie_{description}.png')
+
+                plots = Plots(valid_recipients, invalid_recipients)
+                plots.pie_plot(plot_file_path)
+                abs_plot_path = os.path.abspath(plot_file_path)
+
                 html_parts.append(f'<h1><span class="red"> » </span>Отчет по запуску «{description}»</h1>')
                 html_parts.append(f'<h2>Информация о запуске:</h2>')
 
