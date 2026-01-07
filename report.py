@@ -82,30 +82,33 @@ class RepGenerate:
                 valid_recipients = len(set(row['recipient'] for row in current_good_data))
                 invalid_recipients = len(set(row['recipient'] for row in current_bad_data))
 
-                plot_file_path = os.path.join(self.report_dir, f'pie_{description}.png')
+                #plot_file_path = os.path.join(self.report_dir, f'pie_{description}.png')
 
-                plots = Plots(valid_recipients, invalid_recipients)
-                plots.pie_plot(plot_file_path)
-                abs_plot_path = os.path.abspath(plot_file_path)
+                #plots = Plots(valid_recipients, invalid_recipients)
+                #plots.pie_plot(plot_file_path)
+                #abs_plot_path = os.path.abspath(plot_file_path)
 
                 html_parts.append(f'<h1><span class="red"> » </span>Отчет по запуску «{description}»</h1>')
                 html_parts.append(f'<h2>Информация о запуске:</h2>')
 
                 sender = rows[0]['sender']
                 launch_time = rows[0]['get_time']
+                file_format = rows[0]['file_format']
                 html_parts.append('<ul type="circle">')
                 html_parts.append(f'<li>Отправитель: {sender}</li>'
-                                f'<li>Начало запуска: {launch_time}</li>')
+                                  f'<li>Начало запуска: {launch_time}</li>'
+                                  f'<li>Используемый формат шаблона: {file_format}</li>')
                 html_parts.append('</ul>')
 
-                html_parts.append('<div class ="image-container">')
-                html_parts.append(f'<img src="{abs_plot_path}" alt="Pie Chart">')
-                html_parts.append('</div>')
+                #html_parts.append('<div class ="image-container">')
+                #html_parts.append(f'<img src="{abs_plot_path}" alt="Pie Chart">')
+                #html_parts.append('</div>')
 
                 html_parts.append(f'<h2>Общее число открытий: {self.open_num_counts[description]}</h2>')
                 html_parts.append(f'<h2>Список сработок:</h2>')
+
                 html_parts.append('<table>')
-                html_parts.append('<tr><th>Получатель</th><th>IP</th><th>Время отправки</th><th>Время открытия</th><th>Число открытий</th></tr>')
+                html_parts.append('<tr><th>Получатель</th><th>IP</th><th>Время отправки</th><th>Время открытия</th><th>User-Agent</th><th>Число открытий</th></tr>')
                 for row in rows:
                     if row['open_time']:
                         html_parts.append(
@@ -114,11 +117,11 @@ class RepGenerate:
                             f'<td>{row["ip_addr"]}</td>'
                             f'<td>{row["get_time"]}</td>'
                             f'<td>{row["open_time"]}</td>'
+                            f'<td>{row["user_agent"]}</td>'
                             f'<td>{row["open_num"]}</td>'
                             '</tr>'
                         )
                 html_parts.append('</table>')
-                #if len(self.descriptions) > 1:
                 html_parts.append('<hr>')
 
         #if bad_data:

@@ -26,7 +26,8 @@ class ConfigParse:
 
     def template_configure(self):
         dir_new_templates = self.config.get('templates', 'dir_new_templates')
-        return dir_new_templates
+        parameter = self.config.get('templates', 'parameter')
+        return dir_new_templates, parameter
 
     def smb_configure(self):
         smb_server = self.config.get('smb', 'smb_server')

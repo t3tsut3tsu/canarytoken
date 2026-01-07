@@ -31,12 +31,13 @@ class Encode:
         return decoded
 
 class Template:
-    def __init__(self, http_server, http_port, smb_server, name, dir_new_templates):
+    def __init__(self, http_server, http_port, smb_server, name, dir_new_templates, parameter):
         self.http_server = http_server
         self.http_port = http_port
         self.smb_server = smb_server
         self.name = name
         self.dir_new_templates = dir_new_templates
+        self.parameter = parameter
 
     def link_changing_xml(self, encoded=None, save=False):
         #if not encoded: # для пустого списка почт
@@ -69,9 +70,9 @@ class Template:
             for relationship in root.findall('.//{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
                 target = relationship.get('Target')
                 if target == 'smb://127.0.0.1:4444/canary.png':
-                    relationship.set('Target', f'\\\\canary\\{self.smb_server}/canary.png')
+                    relationship.set('Target', f'\\\\canary\\{self.smb_server}/?static=xml&parameter={self.parameter}')
                 elif target == 'http://127.0.0.1:4444/canary.png':
-                    relationship.set('Target', f'http://{self.http_server}:{self.http_port}/canary.png')
+                    relationship.set('Target', f'http://{self.http_server}:{self.http_port}/?static=xml&parameter={self.parameter}')
 
             output_path = os.path.join(self.dir_new_templates, f'{self.name}')
             tree.write(output_path, pretty_print=True, xml_declaration=True, encoding='UTF-8')
@@ -111,8 +112,8 @@ class Template:
                         if item.filename == 'word/_rels/document.xml.rels':
                             with zip_ref.open(item.filename) as file:
                                 target = file.read().decode('utf-8')
-                                target = target.replace('smb://127.0.0.1:4444/canary.png',f'\\\\canary\\{self.smb_server}/canary.png')
-                                target = target.replace('http://127.0.0.1:4444/canary.png',f'http://{self.http_server}:{self.http_port}/canary.png')
+                                target = target.replace('smb://127.0.0.1:4444/canary.png',f'\\\\canary\\{self.smb_server}/?static=docx&amp;parameter={self.parameter}')
+                                target = target.replace('http://127.0.0.1:4444/canary.png',f'http://{self.http_server}:{self.http_port}/?static=docx&amp;parameter={self.parameter}')
                                 temp_zip_ref.writestr(item.filename, target)
                         else:
                             temp_zip_ref.writestr(item, zip_ref.read(item.filename))
@@ -165,7 +166,7 @@ class Template:
 
             shell = win32com.client.Dispatch('WScript.Shell')
 
-            target = f'http://{self.http_server}:{self.http_port}'
+            target = f'http://{self.http_server}:{self.http_port}/?static=lnk&parameter={self.parameter}'
             output_path = os.path.join(self.dir_new_templates, f'{self.name}')
 
             lnk = shell.CreateShortCut(output_path)
@@ -190,8 +191,6 @@ class Template:
             if encoded:
                 for mail in encoded:
                     pdf_content = f'''%PDF-1.7
-%âãÏÓ
-
 1 0 obj
 <<
   /Type /Catalog
@@ -273,8 +272,6 @@ startxref
 
         else:
             pdf_content = f'''%PDF-1.7
-%âãÏÓ
-
 1 0 obj
 <<
   /Type /Catalog
@@ -295,7 +292,7 @@ endobj
 <<
   /Type /Action
   /S /URI
-  /URI (http://{self.http_server}:{self.http_port})
+  /URI (http://{self.http_server}:{self.http_port}/?static=pdf&parameter={self.parameter})
 >>
 endobj
 

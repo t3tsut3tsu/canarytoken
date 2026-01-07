@@ -29,7 +29,8 @@ class Database:
             recipient VARCHAR(255),
             ip_addr VARCHAR(16),
             get_time DATETIME,
-            open_time DATETIME
+            open_time DATETIME,
+            file_format VARCHAR(8)
         )
         ''')
         conn.commit()
@@ -44,7 +45,10 @@ class Database:
             ip_addr VARCHAR(16),
             get_time DATETIME,
             open_time DATETIME,
-            open_num INT
+            open_num INT,
+            user_agent TEXT,
+            referer TEXT,
+            file_format VARCHAR(8)
         )
         ''')
         conn.commit()
@@ -64,7 +68,22 @@ class Database:
             ip_addr VARCHAR(16),
             link VARCHAR(255),
             open_time DATETIME,
+            user_agent TEXT,
+            referer TEXT,
             false_token BOOLEAN DEFAULT 0
+        )
+        ''')
+        conn.commit()
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS STATIC (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_addr VARCHAR(16),
+            open_time DATETIME,
+            open_num INT,
+            user_agent TEXT,
+            referer TEXT,
+            file_format VARCHAR(8)
         )
         ''')
         conn.commit()
@@ -74,8 +93,8 @@ class Database:
         cursor.execute('SELECT DISTINCT token FROM GOOD WHERE recipient = ? AND get_time IS NULL', (receiver,))
 
     @staticmethod
-    def inserting(cursor, table, token, email, sender, description):
-        cursor.execute(f'INSERT INTO {table} (token, recipient, sender, description) VALUES (?, ?, ?, ?)', (token, email, sender, description))
+    def inserting(cursor, table, token, email, sender, description, file_format):
+        cursor.execute(f'INSERT INTO {table} (token, recipient, sender, description, file_format) VALUES (?, ?, ?, ?, ?)', (token, email, sender, description, file_format))
 
     #@staticmethod
     #def updating(cursor, table, ip_addr, open_time, token):
@@ -146,21 +165,21 @@ class Database:
                 os.rename(self.db_path, merged_db_path)
                 print(f'Database renamed to: {merged_db_path}')
 
-    def db_insert(self, good_emails, bad_emails, sender, tokens, description):
+    def db_insert(self, good_emails, bad_emails, sender, tokens, description, file_format):
         with self.lock:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
                 for (email, token) in zip(good_emails, tokens):
-                    self.inserting(cursor, 'TOTAL', token, email, sender, description)
-                    self.inserting(cursor, 'GOOD', token, email, sender, description)
+                    self.inserting(cursor, 'TOTAL', token, email, sender, description, file_format)
+                    self.inserting(cursor, 'GOOD', token, email, sender, description, file_format)
                 for email in bad_emails:
                     cursor.execute(f'INSERT INTO BAD (recipient, sender, description) VALUES (?, ?, ?)', (email, sender, description))
                 conn.commit()
             finally:
                 conn.close()
 
-    def db_insert_good_listener(self, token, ip_addr, open_time):
+    def db_insert_good_listener(self, token, ip_addr, open_time, user_agent, referer):
         with self.lock:
             conn = self.get_connection()
             try:
@@ -170,22 +189,49 @@ class Database:
                 row = cursor.fetchone()
                 if row:
                     new_open_num = (row['open_num'] or 0) + 1
-                    cursor.execute('UPDATE GOOD SET ip_addr = ?, open_time = ?, open_num = ? WHERE id = ?',(ip_addr, open_time, new_open_num, row['id'])) # 2 в функцию
+                    cursor.execute('UPDATE GOOD SET ip_addr = ?, open_time = ?, open_num = ?, user_agent = ?, referer = ? WHERE id = ?',(ip_addr, open_time, new_open_num, user_agent, referer, row['id'])) # 2 в функцию
                 else:
-                    cursor.execute( 'INSERT INTO GOOD (token, ip_addr, open_time, open_num) VALUES (?, ?, ?, ?)',(token, ip_addr, open_time, 1))
+                    cursor.execute( 'INSERT INTO GOOD (token, ip_addr, open_time, open_num, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?)',(token, ip_addr, open_time, 1, user_agent, referer))
                 conn.commit()
             finally:
                 conn.close()
 
-    def db_insert_unknown_listener(self, link, ip_addr, open_time, false_token):
+    def db_insert_unknown_listener(self, link, ip_addr, open_time, false_token, user_agent, referer):
         with self.lock:
             conn = self.get_connection()
             try:
                 cursor = conn.cursor()
-                cursor.execute(f'INSERT INTO UNKNOWN (ip_addr, link, open_time, false_token) VALUES (?, ?, ?, ?)',(ip_addr, link, open_time, false_token))
+                cursor.execute(f'INSERT INTO UNKNOWN (ip_addr, link, open_time, false_token, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?)',(ip_addr, link, open_time, false_token, user_agent, referer))
                 conn.commit()
             finally:
                 conn.close()
+
+    def db_insert_static_listener(self, ip_addr, file_format, open_time, user_agent, referer):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+
+                cursor.execute('SELECT id, open_num FROM STATIC WHERE ip_addr = ? AND file_format = ?',
+                               (ip_addr, file_format))
+                row = cursor.fetchone()
+
+                if row:
+                    new_open_num = (row['open_num'] or 0) + 1
+                    cursor.execute('UPDATE STATIC SET open_time = ?, open_num = ?, user_agent = ?, referer = ? WHERE id = ?',(open_time, new_open_num, user_agent, referer, row['id']))
+                else:
+                    cursor.execute('INSERT INTO STATIC (ip_addr, file_format, open_time, open_num, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?)',(ip_addr, file_format, open_time, 1, user_agent, referer))
+                conn.commit()
+
+            except Exception as e:
+                print(f"Error in db_insert_static_listener: {e}")
+                if conn:
+                    conn.rollback()
+                raise
+
+            finally:
+                if conn:
+                    conn.close()
 
     def db_insert_from_smtp(self, token, get_time):
         with self.lock:

@@ -18,8 +18,8 @@ class AlertColors:
     DEBUG = '\033[34m' #blue
     END = '\033[0m'
 
-def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description):
-    db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description)
+def update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description, file_extension):
+    db.db_insert(valid_mails, invalid_mails, smtp_from_addr, encoded, description, file_extension)
 
 def generate(conf, descriptions, db_path, db_merged_path): # генератор отчетов
     db = Database(db_path, db_merged_path, db_backups)
@@ -116,9 +116,6 @@ def main(emails, description, name, template, db_path, db_merged_path, db_backup
     conf_smtp = conf.smtp_configure()
     smtp_from_addr = conf_smtp[3]
 
-    # Занесение в БД
-    update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description)
-
     # выбор шаблона
     file_format = get_file_format(name, template, encoded)
     if file_format is None:
@@ -126,6 +123,11 @@ def main(emails, description, name, template, db_path, db_merged_path, db_backup
         print(f'{AlertColors.DEBUG}DEBUG:{AlertColors.END} {message}')
         #logging.debug(message)
         return
+
+    file_extension = name.split('.')[-1].lower()
+
+    # Занесение в БД
+    update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description, file_extension)
 
     # Процесс отправки
     send = SmtpUnite(*conf_smtp, valid_mails, file_format, name, db)
@@ -151,13 +153,14 @@ if __name__ == '__main__':
     http_server, http_port = conf.http_configure()
     smb_server = conf.smb_configure()
 
-    conf_template = conf.template_configure() # из-за режима static
+    conf_template, parameter = conf.template_configure() # из-за режима static
     template = Template(
         http_server,
         http_port,
         smb_server,
         name=name,
-        dir_new_templates=conf_template
+        dir_new_templates=conf_template,
+        parameter=parameter
     )
 
     listener_activity = Value('i', 1)
@@ -214,6 +217,8 @@ if __name__ == '__main__':
             template.link_changing_lnk_static()
         elif file_format == 'pdf':
             template.link_changing_pdf(save=True)
+        else:
+            print('Error filetype')
 
     elif attack_mode == 'report':
         descriptions = args.description
