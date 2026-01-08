@@ -43,6 +43,7 @@ class Database:
             sender VARCHAR(255),
             recipient VARCHAR(255),
             ip_addr VARCHAR(16),
+            all_ips TEXT,
             get_time DATETIME,
             open_time DATETIME,
             open_num INT,

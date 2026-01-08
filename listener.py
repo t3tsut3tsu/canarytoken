@@ -37,12 +37,12 @@ class Handler(BaseHTTPRequestHandler):
                 if self.db.db_is_token_exist(token_value):
                     print(f'>> Token was received: {token_value} from IP: {ip_addr} at {open_time}')
                     self.db.db_insert_good_listener(token_value, ip_addr, open_time, user_agent, referer)
-                    logging.debug(f'{token_value} FROM {ip_addr}')
+                    logging.debug(f'Existing in the database: {token_value} FROM {ip_addr} at {open_time}')
                 else:
                     print('>> It seems someone\'s trying to trick us...')
                     print(f'== Token was received: {token_value} from IP: {ip_addr} at {open_time} ==')
                     self.db.db_insert_unknown_listener(token_value, ip_addr, open_time, user_agent, referer, false_token=1)
-                    logging.warning(f'{token_value} FROM {ip_addr}')
+                    logging.warning(f'Non-existent in the database: {token_value} FROM {ip_addr} at {open_time}')
             except Exception as e:
                 print(f'Error writing to database: {e}')
 
@@ -53,7 +53,7 @@ class Handler(BaseHTTPRequestHandler):
                 print(f'>> It seems someone\'s trying to access important data which is hidden in: {parameter_value}')
                 print(f'== Static <{file_format}> was received from IP: {ip_addr} at {open_time} ==')
                 self.db.db_insert_static_listener(ip_addr, file_format, open_time, user_agent, referer)
-                logging.warning(f'Get STATIC value FROM {ip_addr}')
+                logging.warning(f'Get STATIC with param "{parameter_value}" FROM {ip_addr} at {open_time}')
             except Exception as e:
                 print(f'Error writing to database: {e}')
 
@@ -62,6 +62,7 @@ class Handler(BaseHTTPRequestHandler):
             print(f'== Link was received: {full_link} from IP: {ip_addr} at {open_time} ==')
             try:
                 self.db.db_insert_unknown_listener(full_link, ip_addr, open_time, user_agent, referer, false_token=0)
+                logging.warning(f'Unknown value: {full_link} FROM {ip_addr} at {open_time}')
             except Exception as e:
                 print(f'Error writing to database: {e}')
 
