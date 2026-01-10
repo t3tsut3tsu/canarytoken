@@ -92,3 +92,27 @@ img {
     border-radius: 20px;
     display: block;
 }
+
+/* Cтили для контейнера изображения */
+.image-container {
+    text-align: center !important;
+    margin: 10px auto !important;
+    border: 3px solid #444 !important;
+    display: block !important;
+    background-color: #2a2a2a;
+    padding: 20px;
+    width: fit-content;
+    max-width: 50%;
+}
+
+.image-container img {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #666;
+}
+
+.image-container-old {
+    margin-left: 10%;
+}

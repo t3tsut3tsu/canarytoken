@@ -59,7 +59,8 @@ class Database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT,
             sender VARCHAR(255),
-            recipient VARCHAR(255)
+            recipient VARCHAR(255),
+            reason TEXT
         )
         ''')
 
@@ -174,8 +175,13 @@ class Database:
                 for (email, token) in zip(good_emails, tokens):
                     self.inserting(cursor, 'TOTAL', token, email, sender, description, file_format)
                     self.inserting(cursor, 'GOOD', token, email, sender, description, file_format)
-                for email in bad_emails:
-                    cursor.execute(f'INSERT INTO BAD (recipient, sender, description) VALUES (?, ?, ?)', (email, sender, description))
+                for email_data in bad_emails:
+                    if isinstance(email_data, tuple):
+                        email, reason = email_data
+                    else:
+                        email = email_data
+                        reason = 'invalid_format or duplicate'
+                    cursor.execute('INSERT INTO BAD (recipient, sender, description, reason) VALUES (?, ?, ?, ?)',(email, sender, description, reason))
                 conn.commit()
             finally:
                 conn.close()
@@ -213,8 +219,7 @@ class Database:
             try:
                 cursor = conn.cursor()
 
-                cursor.execute('SELECT id, open_num FROM STATIC WHERE ip_addr = ? AND file_format = ?',
-                               (ip_addr, file_format))
+                cursor.execute('SELECT id, open_num FROM STATIC WHERE ip_addr = ? AND file_format = ?',(ip_addr, file_format))
                 row = cursor.fetchone()
 
                 if row:
@@ -241,6 +246,16 @@ class Database:
                 cursor = conn.cursor()
                 cursor.execute('UPDATE TOTAL SET get_time = ? WHERE token = ?',(get_time, token, )) # 3 в функцию
                 cursor.execute('UPDATE GOOD SET get_time = ? WHERE token = ?',(get_time, token, )) # 3 в функцию
+                conn.commit()
+            finally:
+                conn.close()
+
+    def db_insert_smtp_failure(self, email, sender, description, reason):
+        with self.lock:
+            conn = self.get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute( 'INSERT INTO BAD (recipient, sender, description, reason) VALUES (?, ?, ?, ?)',(email, sender, description, reason) )
                 conn.commit()
             finally:
                 conn.close()

@@ -130,7 +130,7 @@ def main(emails, description, name, template, db_path, db_merged_path, db_backup
     update_database(db, valid_mails, invalid_mails, smtp_from_addr, encoded, description, file_extension)
 
     # Процесс отправки
-    send = SmtpUnite(*conf_smtp, valid_mails, file_format, name, db)
+    send = SmtpUnite(*conf_smtp, valid_mails, file_format, name, db, description)
     send.sending()
 
     # start_time = execution_time(start_time, 'after sending') # отсчет времени

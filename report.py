@@ -10,32 +10,44 @@ import logger
 logger.logger()
 
 class Plots:
-    def __init__(self, valid_mails, invalid_mails):
-        self.valid_mails = valid_mails
-        self.invalid_mails = invalid_mails
+    def __init__(self, reason_stats):
+        self.reason_stats = reason_stats
 
-    def pie_plot(self, file_path):
-        plt.figure(figsize=(3, 3), facecolor='lightgray')
+    def pie_plot_errors(self, file_path):
+        if not self.reason_stats:
+            return False
 
-        plt.rcParams['font.family'] = 'Courier New'
-        plt.rcParams['font.size'] = 8
+        plt.figure(figsize=(6, 6), facecolor='lightgray')
+        plt.rcParams['font.family'] = 'DejaVu Sans'
+        plt.rcParams['font.size'] = 9
 
-        data = [self.valid_mails, self.invalid_mails]
-        labels = ['Отправлено', 'Не отправлено']
-        wedges, texts, autotexts = plt.pie(data, labels=labels, autopct='%1.1f%%', shadow=True)
+        reasons = list(self.reason_stats.keys())
+        counts = list(self.reason_stats.values())
 
-        for text in texts:
-            text.set_fontsize(10)
-            text.set_fontweight('bold')
-        for autotext in autotexts:
-            autotext.set_color('white')
-            autotext.set_fontsize(10)
-            autotext.set_fontweight('bold')
+        colors = plt.cm.Set3(range(len(reasons)))
 
-        plt.title('Доля отправленных\nи не отправленных писем', fontsize=12, fontweight='bold')
+        wedges, texts, autotexts = plt.pie(
+            counts,
+            labels=None,
+            autopct=lambda pct: f'{pct:.1f}%' if pct > 3 else '',
+            shadow=True,
+            startangle=90,
+            colors=colors,
+            textprops={'fontsize': 9, 'fontweight': 'bold'}
+        )
 
-        plt.savefig(file_path, bbox_inches='tight')
+        legend_labels = []
+        for reason, count in self.reason_stats.items():
+            legend_labels.append(f"{reason} ({count})")
+
+        plt.legend(wedges, legend_labels, title="Причины ошибок", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1), fontsize=8)
+
+        plt.title('Причины неудачных отправок', fontsize=12, fontweight='bold', pad=20)
+        plt.axis('equal')
+
+        plt.savefig(file_path, bbox_inches='tight', dpi=100)
         plt.close()
+        return True
 
 class RepGenerate:
     def __init__(self, descriptions, dir_report, rep_name, open_num_counts):
@@ -50,6 +62,49 @@ class RepGenerate:
             os.makedirs(self.dir_report)
         if not os.path.exists(self.report_dir):
             os.makedirs(self.report_dir)
+
+    def _translate_reason(self, reason):
+        translations = {
+            'invalid_format or duplicate': 'Неверный формат email или дубликат',
+
+            'connection_refused': 'Соединение отклонено',
+            'timeout': 'Таймаут',
+            'connection_reset_by_peer': 'Удаленный хост разорвал соединение',
+            'connection_aborted_by_host': 'Хост разорвал соединение',
+            'server_disconnected': 'Почтовый сервер отключился',
+
+            'mailbox_not_found': 'Почтовый ящик не найден',
+            'mailbox_full': 'Почтовый ящик переполнен',
+            'mailbox_syntax_error': 'Ошибка синтаксиса адреса',
+
+            'smtp_connect_error': 'Ошибка подключения к SMTP',
+            'smtp_connect_error_xxx': 'Ошибка подключения к SMTP (код {code})',
+
+            'smtp_error_550': 'Почтовый ящик не найден',
+            'smtp_error_552': 'Почтовый ящик переполнен',
+            'smtp_error_553': 'Ошибка синтаксиса адреса',
+            'smtp_error_xxx': 'SMTP ошибка {code}',
+
+            'unknown_error': 'Неизвестная ошибка',
+        }
+
+        if reason.startswith('smtp_connect_error_'):
+            code = reason.replace('smtp_connect_error_', '')
+            if code.isdigit():
+                return f'Ошибка подключения к SMTP (код {code})'
+            return translations.get('smtp_connect_error', reason)
+
+        elif reason.startswith('smtp_error_'):
+            code = reason.replace('smtp_error_', '')
+
+            if reason in translations:
+                return translations[reason]
+            elif code.isdigit():
+                return f'SMTP ошибка {code}'
+            else:
+                return translations.get('smtp_error_xxx', reason).format(code=code)
+
+        return translations.get(reason, reason)
 
     def gen(self, good_data, bad_data):
         grouped = defaultdict(list)
@@ -76,17 +131,8 @@ class RepGenerate:
             if description in grouped:
                 rows = grouped[description]
 
-                current_good_data = grouped.get(description, [])
+                #current_good_data = grouped.get(description, [])
                 current_bad_data = grouped_bad.get(description, [])
-
-                valid_recipients = len(set(row['recipient'] for row in current_good_data))
-                invalid_recipients = len(set(row['recipient'] for row in current_bad_data))
-
-                #plot_file_path = os.path.join(self.report_dir, f'pie_{description}.png')
-
-                #plots = Plots(valid_recipients, invalid_recipients)
-                #plots.pie_plot(plot_file_path)
-                #abs_plot_path = os.path.abspath(plot_file_path)
 
                 html_parts.append(f'<h1><span class="red"> » </span>Отчет по запуску «{description}»</h1>')
                 html_parts.append(f'<h2>Информация о запуске:</h2>')
@@ -99,13 +145,9 @@ class RepGenerate:
                                   f'<li>Начало запуска: {launch_time}</li>'
                                   f'<li>Используемый формат шаблона: {file_format}</li>')
                 html_parts.append('</ul>')
-
-                #html_parts.append('<div class ="image-container">')
-                #html_parts.append(f'<img src="{abs_plot_path}" alt="Pie Chart">')
-                #html_parts.append('</div>')
-
-                html_parts.append(f'<h2>Общее число открытий: {self.open_num_counts[description]}</h2>')
-                html_parts.append(f'<h2>Список сработок:</h2>')
+                html_parts.append('<hr>')
+                html_parts.append(f'<h2>Общее число срабатываний: {self.open_num_counts[description]}</h2>')
+                html_parts.append(f'<h2>Список срабатываний:</h2>')
 
                 html_parts.append('<table>')
                 html_parts.append('<tr><th>Получатель</th><th>IP</th><th>Время отправки</th><th>Время открытия</th><th>User-Agent</th><th>Число открытий</th></tr>')
@@ -124,19 +166,46 @@ class RepGenerate:
                 html_parts.append('</table>')
                 html_parts.append('<hr>')
 
-        #if bad_data:
-        #    html_parts.append('<h2>Вложения не были отправлены:</h2>')
-        #    html_parts.append('<table>')
-        #    html_parts.append('<tr><th>ID</th><th>Запуск</th><th>Получатель</th></tr>')
-        #    for row in bad_data:
-        #        html_parts.append(
-        #            '<tr>'
-        #            f'<td>{row[\'id\']}</td>'
-        #            f'<td>{row[\'description\']}</td>'
-        #            f'<td>{row[\'recipient\']}</td>'
-        #            '</tr>'
-        #        )
-        #    html_parts.append('</table>')
+                if current_bad_data:
+                    html_parts.append('<h2>Вложения не были отправлены:</h2>')
+                    reason_stats = defaultdict(int)
+                    for row in current_bad_data:
+                        reason = row['reason'] if 'reason' in row.keys() else 'unknown_error'
+                        reason_stats[reason] += 1
+
+                    if reason_stats:
+                        plot_file_path = os.path.join(self.report_dir, f'errors_pie_{description}.png')
+                        plots = Plots(reason_stats)
+                        if plots.pie_plot_errors(plot_file_path):
+                            abs_plot_path = os.path.abspath(plot_file_path)
+
+                            html_parts.append('<div class="image-container">')
+                            html_parts.append(f'<img src="{abs_plot_path}" alt="Pie Chart of Errors">')
+                            html_parts.append('</div>')
+
+                    #html_parts.append('<h2>Детальный список ошибок:</h2>')
+                    #html_parts.append('<table>')
+                    #html_parts.append('<tr><th>ID</th><th>Запуск</th><th>Получатель</th><th>Причина</th></tr>')
+
+                    #current_bad_data_sorted = sorted(current_bad_data,
+                    #                                 key=lambda x: (x['id'] if 'id' in x.keys() else 0,
+                    #                                                x['reason'] if 'reason' in x.keys() else '',
+                    #                                                x['recipient'] if 'recipient' in x.keys() else ''))
+
+                    #for row in current_bad_data_sorted:
+                    #    reason = row['reason'] if 'reason' in row.keys() else 'unknown_error'
+                    #    reason_translated = self._translate_reason(reason)
+
+                    #    html_parts.append(
+                    #        '<tr>'
+                    #        f'<td>{row["id"]}</td>'
+                    #        f'<td>{row["description"]}</td>'
+                    #        f'<td>{row["recipient"]}</td>'
+                    #        f'<td>{reason_translated}</td>'
+                    #        '</tr>'
+                    #    )
+                    #html_parts.append('</table>')
+                    html_parts.append('<hr>')
 
         html_parts.append('</body>')
         html_parts.append('</html>')
