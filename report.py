@@ -17,35 +17,72 @@ class Plots:
         if not self.reason_stats:
             return False
 
-        plt.figure(figsize=(6, 6), facecolor='lightgray')
+        fig = plt.figure(figsize=(12, 5), facecolor='lightgray')
         plt.rcParams['font.family'] = 'DejaVu Sans'
-        plt.rcParams['font.size'] = 9
+        plt.rcParams['font.size'] = 11
 
         reasons = list(self.reason_stats.keys())
         counts = list(self.reason_stats.values())
 
         colors = plt.cm.Set3(range(len(reasons)))
 
-        wedges, texts, autotexts = plt.pie(
+        ax = fig.add_subplot(111)
+
+        wedges, texts, autotexts = ax.pie(
             counts,
             labels=None,
             autopct=lambda pct: f'{pct:.1f}%' if pct > 3 else '',
-            shadow=True,
             startangle=90,
             colors=colors,
-            textprops={'fontsize': 9, 'fontweight': 'bold'}
+            textprops={'fontsize': 12, 'fontweight': 'bold'},
+            wedgeprops={'edgecolor': 'white', 'linewidth': 1.5}
         )
 
-        legend_labels = []
-        for reason, count in self.reason_stats.items():
-            legend_labels.append(f"{reason} ({count})")
+        for autotext in autotexts:
+            autotext.set_color('dimgray')
+            autotext.set_fontweight('bold')
 
-        plt.legend(wedges, legend_labels, title="Причины ошибок", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1), fontsize=8)
+        legend_labels = [f'{reason} ({count})' for reason, count in self.reason_stats.items()]
 
-        plt.title('Причины неудачных отправок', fontsize=12, fontweight='bold', pad=20)
-        plt.axis('equal')
+        legend = ax.legend(
+            wedges,
+            legend_labels,
+            title="Причины ошибок",
+            title_fontsize=13,
+            fontsize=12,
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            frameon=True,
+            fancybox=True,
+            shadow=False,
+            borderpad=1,
+            labelspacing=1.2
+        )
 
-        plt.savefig(file_path, bbox_inches='tight', dpi=100)
+        legend.get_frame().set_facecolor('white')
+        legend.get_frame().set_alpha(0.9)
+
+        fig.suptitle(
+            'Причины неудачных отправок',
+            fontsize=16,
+            fontweight='bold',
+            y=0.95,
+            x=0.4,
+            color='dimgray'
+        )
+        ax.axis('equal')
+        ax.axis('off')
+
+        plt.tight_layout(rect=[0, 0, 0.82, 0.95])
+
+        plt.savefig(
+            file_path,
+            bbox_inches='tight',
+            dpi=130,
+            facecolor='lightgray',
+            pad_inches=0.2,
+            transparent=False,
+        )
         plt.close()
         return True
 

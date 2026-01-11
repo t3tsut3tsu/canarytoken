@@ -96,23 +96,32 @@ img {
 /* Cтили для контейнера изображения */
 .image-container {
     text-align: center !important;
-    margin: 10px auto !important;
-    border: 3px solid #444 !important;
+    margin: 20px auto !important;
+    border: 2px solid #444 !important;
     display: block !important;
     background-color: #2a2a2a;
     padding: 20px;
-    width: fit-content;
-    max-width: 50%;
+    width: 80% !important;
+    max-width: 80% !important;
+    border-radius: 20px;
+    box-sizing: border-box;
 }
 
 .image-container img {
     display: block !important;
     margin: 0 auto !important;
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto;
     border: 1px solid #666;
+    border-radius: 10px;
+    box-sizing: border-box;
 }
 
-.image-container-old {
-    margin-left: 10%;
+.image-container figcaption {
+    color: #a9b2ba;
+    font-size: 14px;
+    margin-top: 10px;
+    text-align: center;
+    font-family: "Ubuntu Mono", monospace;
 }
